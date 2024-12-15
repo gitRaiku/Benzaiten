@@ -1,0 +1,7 @@
+other/
+*/*.runs
+*/*.runs/
+*/*.sim
+*.o
+*/bin/
+*.log
