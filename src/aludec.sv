@@ -8,13 +8,13 @@ module aludec(
     output logic [2:0] ALUControl
   );
   logic   RtypeSub;
-  assign RtypeSub = funct7b5 & opb5;  // TRUE for R–type subtract     
+  assign RtypeSub = funct7b5 & opb5;  // TRUE for R-type subtract     
   always_comb 
     case(ALUOp)
       2'b00: ALUControl = 3'b000; // addition
       2'b01: ALUControl = 3'b001; // subtraction
       default: 
-        case(funct3) // R–type or I–type ALU
+        case(funct3) // R-type or I-type ALU
           3'b000: 
             if (RtypeSub) ALUControl = 3'b001; // sub
                      else ALUControl = 3'b000; // add, addi 

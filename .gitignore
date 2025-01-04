@@ -5,3 +5,5 @@ other/
 *.o
 */bin/
 *.log
+
+vivado/
