@@ -1,25 +1,23 @@
 `timescale 1ns / 1ps
 
-module controller(
-    input  logic [6:0] op,
-    input  logic [2:0] funct3,
-    input  logic       funct7b5,
-    input  logic       Zero,
-    output logic [1:0] ResultSrc,
-    output logic       MemWrite,
-    output logic       PCSrc, ALUSrc,
-    output logic       RegWrite, Jump,
-    output logic [1:0] ImmSrc,
-    output logic [2:0] ALUControl
-  );
+package defs;
+typedef enum { INS_R, INS_I, INS_U, INS_S, INS_B } instype;
+typedef enum { ALU_ADD, ALU_SUB, ALU_AND, ALU_OR, ALU_XOR, ALU_EQN, ALU_LT, ALU_SLT, ALU_GT, ALU_SGT, ALU_SLL, ALU_SAL, ALU_SLR, ALU_SAR } aluop;
 
-  logic [1:0] ALUOp;  
-  logic Branch;
+endpackage
 
-  maindec md(op, ResultSrc, MemWrite, Branch,
-             ALUSrc, RegWrite, Jump, ImmSrc, ALUOp);
+module controller(input logic clk, rst_n);
+  logic [31:0]instruction;
+  logic write_enabled;
+  logic [31:0]writeback;
 
-  aludec ad(op[5], funct3, funct7b5, ALUOp, ALUControl);  
+  logic [31:0]rf1;
+  logic [31:0]rf2;
 
-  assign PCSrc = Branch & Zero | Jump;
+  instrDecoder idec(instruction);
+
+  regfile rf(clk, rst_n, 1, idec.rs1, idec.rs2, idec.rd, writeback, rf1, rf2);
+
+  alucon acon(clk, rst_n, idec.op, idec.func, idec.instrType, rf1, rf2, idec.imm, writeback);
+
 endmodule
