@@ -2,10 +2,11 @@
 
 /// I LOVE EXTENDER!!
 module extender(
-  input logic [11:0]num,
+  input logic [31:0]num,
+  input logic immU,
   output logic [31:0]out
   );
 
-  assign out = { {20{num[11]}}, num[10:0] };
+  assign out = immU ? num : { {19{num[12]}}, num[11:0] };
 
 endmodule

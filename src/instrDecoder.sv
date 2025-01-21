@@ -25,10 +25,6 @@ module instrDecoder(input logic [31:0]instr);
     * rs1   = [19:15]
     * rd    = [11:7]
     *
-    * 010 U-Type (Upper Imm)
-    * imm   = [31:12]
-    * rd    = [11:7]
-    *
     * 011 S-Type (Store)
     * imm   = {[31:25], [11:7]}
     * rs2 = [24:20]
@@ -41,11 +37,9 @@ module instrDecoder(input logic [31:0]instr);
     * rs1 = [19:15]
     * funct = [14:12]
     *
-    * 101 B-Type (Branch)
-    * imm = {[31], [7], [30:25], [11:8], 0}
-    * rs2 = [24:20]
-    * rs1 = [19:15]
-    * funct = [14:12]
+    * 010 U-Type (Upper Imm)
+    * imm   = [31:12]
+    * rd    = [11:7]
     *
     * 110 J-Type (Branch)
     * imm = {[31], [19:12], [20], [30:21], 0}
@@ -54,28 +48,51 @@ module instrDecoder(input logic [31:0]instr);
   */
 
   assign op = instr[6:0]; 
-  assign instrType = (op == 7'b0110011) ? INS_R : INS_I; /// TODO: Better logic
   always_comb begin
-    case (instrType)
-      INS_R: func <= {instr[31:25], instr[14:12]};
-      INS_I: func <= {instr[14:12]};
-      default: func <= 10'hZZ;
+    case (op)
+      7'b00100_11: instrType <= INS_I;
+      7'b01100_11: instrType <= INS_R;
+      7'b01101_11: instrType <= INS_U;
+      7'b11011_11: instrType <= INS_J;
+      7'b11001_11: instrType <= INS_I;
+      7'b11000_11: instrType <= INS_B;
+      7'b00000_11: instrType <= INS_I;
+      7'b01000_11: instrType <= INS_S;
+      default: instrType <= 7'hZZ;
     endcase
   end
+  assign func = {instr[31:25], instr[14:12]};
   assign rs1 = instr[19:15];
   assign rs2 = instr[24:20];
   assign rd = instr[11:7];
 
-  logic [11:0]simm;
-
+  logic [31:0]simm;
+  logic immU;
   always_comb begin
     case (instrType)
-      INS_R: simm <= 12'hZZ;
-      INS_I: simm <= instr[31:20];
-      default: simm <= 12'hXX;
+      INS_R: begin
+        simm <= 12'hZZ; immU <= 1'b0;
+      end
+      INS_I: begin
+        simm <= {instr[31], instr[31:20]}; immU <= 1'b0;
+      end
+      INS_S: begin
+        simm <= {instr[31], instr[31:20]}; immU <= 1'b0;
+      end
+      INS_B: begin
+        simm <= {instr[31], instr[7], instr[30:25], instr[11:8], 1'b0}; immU <= 1'b0;
+      end
+      INS_U: begin
+        simm <= {instr[31:12], {12{0}}}; immU <= 1'b1;
+      end
+      INS_J: begin
+        simm <= {instr[31], instr[19:12], instr[20], instr[30:21]}; immU <= 1'b0;
+      end
+      default: begin
+        simm <= 13'hZZ; immU <= 1'b0;
+      end
     endcase
   end
-  /// TODO: Decode imm
-  extender exte(simm, imm);
+  extender exte(simm, immU, imm);
 
 endmodule

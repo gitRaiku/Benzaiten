@@ -26,6 +26,10 @@ module alucon(
         op1 <= rf1; 
         op2 <= imm;
       end
+      INS_S: begin
+        op1 <= rf2;
+        op2 <= imm;
+      end
       default: begin
         op1 <= 32'hZZZZ; 
         op2 <= 32'hZZZZ;
@@ -35,31 +39,32 @@ module alucon(
 
   always_comb begin
     case (op)
-      7'b0010011:
+      7'b00100_11:
         case (func)
-          9'b000: caluhop <= ALU_ADD;
-          9'b010: caluhop <= ALU_SLT;
-          9'b010: caluhop <= ALU_LT;
-          9'b010: caluhop <= ALU_LT;
-          9'b111: caluhop <= ALU_AND;
-          9'b110: caluhop <= ALU_OR;
-          9'b100: caluhop <= ALU_XOR;
-          9'b001: caluhop <= ALU_SLL; /// TODO CHECK
-          9'b101: caluhop <= ALU_SAL;
+          9'b??????_000: caluhop <= ALU_ADD;
+          9'b??????_010: caluhop <= ALU_SLT;
+          9'b??????_010: caluhop <= ALU_LT;
+          9'b??????_010: caluhop <= ALU_LT;
+          9'b??????_111: caluhop <= ALU_AND;
+          9'b??????_110: caluhop <= ALU_OR;
+          9'b??????_100: caluhop <= ALU_XOR;
+          9'b??????_001: caluhop <= ALU_SLL; /// TODO CHECK
+          9'b??????_101: caluhop <= ALU_SAL;
         endcase
-      7'b0110011:
+      7'b01100_11:
         case (func)
-          9'b000: caluhop <= ALU_ADD;
+          9'b0000000_000: caluhop <= ALU_ADD;
           9'b0100000_000: caluhop <= ALU_SUB;
-          9'b010: caluhop <= ALU_SLT;
-          9'b010: caluhop <= ALU_LT;
-          9'b010: caluhop <= ALU_LT;
-          9'b111: caluhop <= ALU_AND;
-          9'b110: caluhop <= ALU_OR;
-          9'b100: caluhop <= ALU_XOR;
-          9'b001: caluhop <= ALU_SLL;
-          9'b101: caluhop <= ALU_SAL;
+          9'b0000000_010: caluhop <= ALU_SLT;
+          9'b0000000_010: caluhop <= ALU_LT;
+          9'b0000000_010: caluhop <= ALU_LT;
+          9'b0000000_111: caluhop <= ALU_AND;
+          9'b0000000_110: caluhop <= ALU_OR;
+          9'b0000000_100: caluhop <= ALU_XOR;
+          9'b0000000_001: caluhop <= ALU_SLL;
+          9'b0000000_101: caluhop <= ALU_SAL;
         endcase
+      7'b01000_11: caluhop <= ALU_ADD;
     endcase
   end
 
