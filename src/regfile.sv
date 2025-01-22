@@ -11,7 +11,7 @@ module regfile(
   output logic [31:0]res2
   );
 
-  logic [4:0][31:0]memory;
+  logic [31:0]memory[32];
 
   always_comb begin
     res1 <= memory[rs1];
