@@ -28,7 +28,7 @@ module controller(input logic clk, rst_n);
     end
   end
 
-  ram cram(clk, rst_n, pc, instruction);
+  ram cram(clk, rst_n, pc, idec.writeLen, writeback, instruction);
 
   instrDecoder idec(instruction);
 

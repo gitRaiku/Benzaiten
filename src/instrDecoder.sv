@@ -11,6 +11,7 @@ module instrDecoder(input logic [31:0]instr);
   logic [4:0]rs2;
   logic [4:0]rd;
   logic [31:0]imm;
+  logic [2:0]writeLen;
 
   /*
     * 000 R-Type (Register / Register)
@@ -94,5 +95,18 @@ module instrDecoder(input logic [31:0]instr);
     endcase
   end
   extender exte(simm, immU, imm);
+
+  always_comb begin
+    if (simm == INSTR_S) begin
+      case (func) begin 
+        000: writeLen <= 1;
+        001: writeLen <= 2;
+        010: writeLen <= 4;
+        default: writeLen <= 0;
+      end
+    end else begin
+      writeLen <= 0;
+    end
+  end
 
 endmodule
