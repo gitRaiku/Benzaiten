@@ -7,6 +7,6 @@ module extender(
   output logic [31:0]out
   );
 
-  assign out = immU ? num : { {19{num[12]}}, num[11:0] };
+  assign out = immU ? num : { {20{num[12]}}, num[11:0] };
 
 endmodule

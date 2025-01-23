@@ -59,7 +59,7 @@ module instrDecoder(input logic [31:0]instr);
       7'b11000_11: instrType <= INS_B;
       7'b00000_11: instrType <= INS_I;
       7'b01000_11: instrType <= INS_S;
-      default: instrType <= 7'hZZ;
+      default: instrType <= INS_INVALID;
     endcase
   end
   assign func = {instr[31:25], instr[14:12]};
@@ -75,37 +75,37 @@ module instrDecoder(input logic [31:0]instr);
         simm <= 12'hZZ; immU <= 1'b0;
       end
       INS_I: begin
-        simm <= {instr[31], instr[31:20]}; immU <= 1'b0;
+        simm <= {19'h0000, instr[31], instr[31:20]}; immU <= 1'b0;
       end
       INS_S: begin
-        simm <= {instr[31], instr[31:20]}; immU <= 1'b0;
+        simm <= {19'h0000,instr[31], instr[31:25], instr[11:7]}; immU <= 1'b0;
       end
       INS_B: begin
-        simm <= {instr[31], instr[7], instr[30:25], instr[11:8], 1'b0}; immU <= 1'b0;
+        simm <= {19'h0000,instr[31], instr[7], instr[30:25], instr[11:8], 1'b0}; immU <= 1'b0;
       end
       INS_U: begin
-        simm <= {instr[31:12], {12{0}}}; immU <= 1'b1;
+        simm <= {instr[31:12], {12{1'b0}}}; immU <= 1'b1;
       end
       INS_J: begin
-        simm <= {instr[31], instr[19:12], instr[20], instr[30:21]}; immU <= 1'b0;
+        simm <= {19'h0000,instr[31], instr[19:12], instr[20], instr[30:21]}; immU <= 1'b0;
       end
       default: begin
-        simm <= 13'hZZ; immU <= 1'b0;
+        simm <= 32'hZZ; immU <= 1'b0;
       end
     endcase
   end
   extender exte(simm, immU, imm);
 
   always_comb begin
-    if (simm == INSTR_S) begin
-      case (func) begin 
-        000: writeLen <= 1;
-        001: writeLen <= 2;
-        010: writeLen <= 4;
-        default: writeLen <= 0;
-      end
+    if (instrType == INS_S) begin
+      case (func[2:0]) 
+        3'b000: writeLen <= 3'h1;
+        3'b001: writeLen <= 3'h2;
+        3'b010: writeLen <= 3'h4;
+        default: writeLen <= 3'h0;
+      endcase
     end else begin
-      writeLen <= 0;
+      writeLen <= 3'h0;
     end
   end
 
