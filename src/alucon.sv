@@ -4,6 +4,7 @@ import defs::*;
 module alucon(
   input logic clk, rst_n,
   input logic [6:0]op, [9:0]func,
+  input logic [31:0]pc, 
   input instype itype,
   input logic [31:0]rf1, 
   input logic [31:0]rf2,
@@ -31,7 +32,11 @@ module alucon(
         op2 <= imm;
       end
       INS_U: begin
-        op1 <= 32'h0000;
+        if (op == 7'b00101_11) begin
+          op1 <= pc;
+        end else begin
+          op1 <= 32'h0000;
+        end
         op2 <= imm;
       end
       default: begin
@@ -70,6 +75,7 @@ module alucon(
         endcase
       7'b01000_11: caluhop <= ALU_ADD;
       7'b01101_11: caluhop <= ALU_ADD;
+      7'b00101_11: caluhop <= ALU_ADD;
     endcase
   end
 

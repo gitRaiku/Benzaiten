@@ -65,6 +65,6 @@ module controller(input logic clk, rst_n);
 
   regfile rf(clk, rst_n, rfwe, idec.rs1, idec.rs2, idec.rd, rfwb, rf1, rf2);
 
-  alucon acon(clk, rst_n, idec.op, idec.func, idec.instrType, rf1, rf2, idec.imm, aluwb);
+  alucon acon(clk, rst_n, idec.op, idec.func, pc, idec.instrType, rf1, rf2, idec.imm, aluwb);
 
 endmodule

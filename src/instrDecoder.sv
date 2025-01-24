@@ -59,6 +59,7 @@ module instrDecoder(input logic [31:0]instr);
       7'b11000_11: instrType <= INS_B;
       7'b00000_11: instrType <= INS_I;
       7'b01000_11: instrType <= INS_S;
+      7'b00101_11: instrType <= INS_U;
       default: instrType <= INS_INVALID;
     endcase
   end
