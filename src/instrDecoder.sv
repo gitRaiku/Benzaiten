@@ -87,7 +87,7 @@ module instrDecoder(input logic [31:0]instr);
         simm <= {instr[31:12], {12{1'b0}}}; immU <= 1'b1;
       end
       INS_J: begin
-        simm <= {19'h0000,instr[31], instr[19:12], instr[20], instr[30:21]}; immU <= 1'b0;
+        simm <= {12'h0000,instr[31], instr[19:12], instr[20], instr[30:21], 1'b0}; immU <= 1'b0;
       end
       default: begin
         simm <= 32'hZZ; immU <= 1'b0;

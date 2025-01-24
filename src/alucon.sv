@@ -30,6 +30,10 @@ module alucon(
         op1 <= rf1;
         op2 <= imm;
       end
+      INS_U: begin
+        op1 <= 32'h0000;
+        op2 <= imm;
+      end
       default: begin
         op1 <= 32'hZZZZ; 
         op2 <= 32'hZZZZ;
@@ -65,6 +69,7 @@ module alucon(
           9'b0000000_101: caluhop <= ALU_SAL;
         endcase
       7'b01000_11: caluhop <= ALU_ADD;
+      7'b01101_11: caluhop <= ALU_ADD;
     endcase
   end
 

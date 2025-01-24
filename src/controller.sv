@@ -13,6 +13,7 @@ module controller(input logic clk, rst_n);
 
   logic rfwe;
   logic [31:0]aluwb;
+  logic readyToJump;
 
   logic [31:0]rf1;
   logic [31:0]rf2;
@@ -23,8 +24,13 @@ module controller(input logic clk, rst_n);
       pcnext <= 32'h0000;
     end
     else if (clk) begin
-      pc <= pcnext;
-      pcnext <= pcnext + 32'h4;
+      pcnext <= pc + 32'h4;
+    end else if (!clk) begin
+      if (readyToJump) begin
+        pc <= pcnext + idec.imm;
+      end else begin 
+        pc <= pcnext;
+      end
     end
   end
 
@@ -48,9 +54,10 @@ module controller(input logic clk, rst_n);
     end
   end
 
+  /*
   always_comb begin
-
-  end
+    readyToJump
+  end*/
 
   ramcon cram(clk, rst_n, pc, aluwb, idec.op, idec.writeLen, rf2);
 
