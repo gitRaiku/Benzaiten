@@ -10,10 +10,9 @@ module controller(input logic clk, rst_n);
   logic [31:0]instruction;
   logic [31:0]pc;
   logic [31:0]pcnext;
-  logic fetchingInstr;
 
-  logic write_enabled;
-  logic [31:0]writeback;
+  logic rfwe;
+  logic [31:0]aluwb;
 
   logic [31:0]rf1;
   logic [31:0]rf2;
@@ -29,12 +28,32 @@ module controller(input logic clk, rst_n);
     end
   end
 
-  ram cram(clk, rst_n, pc, idec.writeLen, writeback, instruction);
+  logic [31:0]rfwb;
+  always_comb begin
+    if (!clk) begin
+      instruction <= cram.out;
+      rfwe <= 1'b0;
+    end else begin
+      case (idec.op) 
+        7'b01000_11: begin
+          rfwb <= cram.out;
+          rfwe <= 1'b1;
+        end
+        7'b00000_11: rfwe <= 1'b0;
+        default: begin
+          rfwb <= aluwb;
+          rfwe <= 1'b1;
+        end
+      endcase
+    end
+  end
+
+  ramcon cram(clk, rst_n, pc, aluwb, idec.op, idec.writeLen, rf2);
 
   instrDecoder idec(instruction);
 
-  regfile rf(clk, rst_n, 1'b1, idec.rs1, idec.rs2, idec.rd, writeback, rf1, rf2);
+  regfile rf(clk, rst_n, rfwe, idec.rs1, idec.rs2, idec.rd, aluwb, rf1, rf2);
 
-  alucon acon(clk, rst_n, idec.op, idec.func, idec.instrType, rf1, rf2, idec.imm, writeback);
+  alucon acon(clk, rst_n, idec.op, idec.func, idec.instrType, rf1, rf2, idec.imm, aluwb);
 
 endmodule

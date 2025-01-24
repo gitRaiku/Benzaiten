@@ -97,7 +97,14 @@ module instrDecoder(input logic [31:0]instr);
   extender exte(simm, immU, imm);
 
   always_comb begin
-    if (instrType == INS_S) begin
+    if (instrType == INS_S) begin /// TODO: Pretty
+      case (func[2:0]) 
+        3'b000: writeLen <= 3'h1;
+        3'b001: writeLen <= 3'h2;
+        3'b010: writeLen <= 3'h4;
+        default: writeLen <= 3'h0;
+      endcase
+    end else if (instrType == INS_I && op == 7'b00000_11) begin
       case (func[2:0]) 
         3'b000: writeLen <= 3'h1;
         3'b001: writeLen <= 3'h2;
