@@ -16,7 +16,7 @@ module ramcon(
   logic rw;
 
   always_comb begin
-    if (pc == 32'h28) $stop;
+    if (pc == 32'h60) $stop;
   end
 
   always_comb begin

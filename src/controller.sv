@@ -35,11 +35,11 @@ module controller(input logic clk, rst_n);
       rfwe <= 1'b0;
     end else begin
       case (idec.op) 
-        7'b01000_11: begin
+        7'b00000_11: begin
           rfwb <= cram.out;
           rfwe <= 1'b1;
         end
-        7'b00000_11: rfwe <= 1'b0;
+        7'b01000_11: rfwe <= 1'b0;
         default: begin
           rfwb <= aluwb;
           rfwe <= 1'b1;
@@ -48,11 +48,15 @@ module controller(input logic clk, rst_n);
     end
   end
 
+  always_comb begin
+
+  end
+
   ramcon cram(clk, rst_n, pc, aluwb, idec.op, idec.writeLen, rf2);
 
   instrDecoder idec(instruction);
 
-  regfile rf(clk, rst_n, rfwe, idec.rs1, idec.rs2, idec.rd, aluwb, rf1, rf2);
+  regfile rf(clk, rst_n, rfwe, idec.rs1, idec.rs2, idec.rd, rfwb, rf1, rf2);
 
   alucon acon(clk, rst_n, idec.op, idec.func, idec.instrType, rf1, rf2, idec.imm, aluwb);
 
