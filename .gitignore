@@ -6,4 +6,5 @@ other/
 */bin/
 *.log
 
+riscvbook/
 vivado/
