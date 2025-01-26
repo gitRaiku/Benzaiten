@@ -22,7 +22,7 @@ module alu(
   output logic [31:0]out
   );
   aluop temp;
-    
+
   always_comb begin
     case(op)
       ALU_ADD: out <= in1 + in2;
@@ -31,16 +31,13 @@ module alu(
       ALU_OR : out <= in1 | in2;
       ALU_XOR: out <= in1 ^ in2;
       ALU_EQN: out <= in1 == in2;
-      ALU_LT : out <= in1 < in2;
-      ALU_SLT: out <= $signed(in1) < $signed(in2);
-      /*
-      ALU_GT: result <= in1 in2;
-      ALU_SGT: result <= in1 in2;
-      ALU_SLL: result <= in1 in2;
-      ALU_SAL: result <= in1 in2;
-      ALU_SLR: result <= in1 in2;
-      ALU_SAR: result <= in1 in2;
-      */
+      ALU_LT : out <= $signed(in1) < $signed(in2);
+      ALU_LTU: out <= in1 < in2;
+      ALU_GT : out <= $signed(in1) > $signed(in2);
+      ALU_GTU: out <= in1 > in2;
+      ALU_SLL: out <= in1 << in2[4:0];
+      ALU_SLR: out <= in1 >> in2[4:0];
+      ALU_SAR: out <= $signed(in1) >>> $signed(in2[4:0]);
       default: out <= 32'hXXXX;
     endcase
   end

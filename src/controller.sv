@@ -2,7 +2,7 @@
 
 package defs;
 typedef enum { INS_R, INS_I, INS_S, INS_B, INS_U, INS_J, INS_INVALID } instype;
-typedef enum { ALU_ADD, ALU_SUB, ALU_AND, ALU_OR, ALU_XOR, ALU_EQN, ALU_LT, ALU_SLT, ALU_GT, ALU_SGT, ALU_SLL, ALU_SAL, ALU_SLR, ALU_SAR } aluop;
+typedef enum { ALU_ADD, ALU_SUB, ALU_AND, ALU_OR, ALU_XOR, ALU_EQN, ALU_LT, ALU_LTU, ALU_GT, ALU_GTU, ALU_SLL, ALU_SLR, ALU_SAR, ALU_INVALID } aluop;
 
 endpackage
 
@@ -13,7 +13,7 @@ module controller(input logic clk, rst_n);
 
   logic rfwe;
   logic [31:0]aluwb;
-  logic readyToJump;
+  logic [31:0]jumpLen;
 
   logic [31:0]rf1;
   logic [31:0]rf2;
@@ -22,16 +22,20 @@ module controller(input logic clk, rst_n);
     if (!rst_n) begin 
       pc <= 32'h0000;
       pcnext <= 32'h0000;
-    end
-    else if (clk) begin
-      pcnext <= pc + 32'h4;
+    end else if (clk) begin
+      pcnext <= pc + jumpLen;
     end else if (!clk) begin
-      if (readyToJump) begin
-        pc <= pcnext + idec.imm;
-      end else begin 
-        pc <= pcnext;
-      end
+      pc <= pcnext;
     end
+  end
+
+  always_comb begin
+    case (idec.op)
+      7'b11001_11: jumpLen <= aluwb; // JALR
+      7'b11011_11: jumpLen <= idec.imm; // JAL
+      7'b11000_11: jumpLen <= (aluwb[0] != idec.func[0]) ? idec.imm : 32'h0004; // BXX
+      default: jumpLen <= 32'h0004;
+    endcase
   end
 
   logic [31:0]rfwb;
@@ -46,6 +50,10 @@ module controller(input logic clk, rst_n);
           rfwe <= 1'b1;
         end
         7'b01000_11: rfwe <= 1'b0;
+        7'b110?1_11: begin // JAL JALR
+          rfwb <= pcnext;
+          rfwe <= 1'b1;
+        end
         default: begin
           rfwb <= aluwb;
           rfwe <= 1'b1;
@@ -53,11 +61,6 @@ module controller(input logic clk, rst_n);
       endcase
     end
   end
-
-  /*
-  always_comb begin
-    readyToJump
-  end*/
 
   ramcon cram(clk, rst_n, pc, aluwb, idec.op, idec.writeLen, rf2);
 
