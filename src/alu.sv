@@ -22,6 +22,7 @@ module alu(
   output logic [31:0]out
   );
 
+  asdfasdf
   always_comb begin
     case (op)
       ALU_ADD: out <= in1 + in2;
