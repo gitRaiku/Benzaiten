@@ -6,7 +6,10 @@ typedef enum { ALU_ADD, ALU_SUB, ALU_AND, ALU_OR, ALU_XOR, ALU_EQN, ALU_LT, ALU_
 
 endpackage
 
-module controller(input logic clk, rst_n);
+module controller(input logic clk, 
+                  input logic rst_n,
+                  output logic led_1
+                  );
   logic [31:0]instruction;
   logic [31:0]pc;
   logic [31:0]pcnext;
@@ -17,6 +20,10 @@ module controller(input logic clk, rst_n);
 
   logic [31:0]rf1;
   logic [31:0]rf2;
+
+  always_comb begin
+    led_1 <= rf.memory[1][1];
+  end
 
   always @(edge clk or negedge rst_n) begin
     if (!rst_n) begin 

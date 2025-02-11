@@ -23,6 +23,7 @@ module alu(
   );
   aluop temp;
 
+  asdfasdf
   always_comb begin
     case(op)
       ALU_ADD: out <= in1 + in2;
