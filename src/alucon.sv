@@ -2,7 +2,6 @@
 import defs::*;
 
 module alucon(
-  input logic clk, rst_n,
   input logic [6:0]op, [9:0]func,
   input logic [31:0]pc, 
   input instype itype,

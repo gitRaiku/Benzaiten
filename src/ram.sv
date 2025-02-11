@@ -9,8 +9,10 @@ module ram(
   output logic [31:0]out
   );
 
-  reg [7:0]data[200];
+  `define MEM_LEN 32'd128
+  reg [7:0]data[`MEM_LEN];
 
+  /*
   int i;
   logic [31:0]ops[20];
   initial begin
@@ -41,56 +43,55 @@ module ram(
       data[4 * i + 3] = ops[i][7:0];
     end
   end
+  */
 
-  always_comb begin
-    if (rw && clk) begin
-      case (oplen)
-        3'h4: begin
-          data[addr + 3] <= writeData[7:0];
-          data[addr + 2] <= writeData[15:8];
-          data[addr + 1] <= writeData[23:16];
-          data[addr + 0] <= writeData[31:24];
-        end
-        3'h3: begin
-          data[addr + 2] <= writeData[7:0];
-          data[addr + 1] <= writeData[15:8];
-          data[addr + 0] <= writeData[23:16];
-        end
-        3'h2: begin
-          data[addr + 1] <= writeData[7:0];
-          data[addr + 0] <= writeData[15:8];
-        end
-        3'h1: begin
-          data[addr + 0] <= writeData[7:0];
-        end
-        default: ;
-      endcase
-    end else begin
-      case (oplen)
-        3'h4: begin
-          $display("Reading %u 4 bytes", addr);
-          out[7:0] <= data[addr + 32'h0003];
-          out[15:8] <= data[addr + 32'h0002];
-          out[23:16] <= data[addr + 32'h0001];
-          out[31:24] <= data[addr + 32'h0000];
-        end
-        3'h3: begin
-          $display("Reading %u 3 bytes", addr);
-          out[7:0] <= data[addr + 32'h0002];
-          out[15:8] <= data[addr + 32'h0001];
-          out[23:16] <= data[addr + 32'h0000];
-        end
-        3'h2: begin
-          $display("Reading %u 2 bytes", addr);
-          out[7:0] <= data[addr + 32'h0001];
-          out[15:8] <= data[addr + 32'h0000];
-        end
-        3'h1: begin
-          $display("Reading %u 1 bytes", addr);
-          out[7:0] <= data[addr + 32'h0000];
-        end
-        default: out <= 32'hfeef;
-      endcase
+  always @(rw or clk or addr or oplen or writeData) begin
+    if (addr < `MEM_LEN - oplen) begin
+      if (rw && clk) begin
+        case (oplen)
+          3'h4: begin
+            data[addr + 3] <= writeData[7:0];
+            data[addr + 2] <= writeData[15:8];
+            data[addr + 1] <= writeData[23:16];
+            data[addr + 0] <= writeData[31:24];
+          end
+          3'h3: begin
+            data[addr + 2] <= writeData[7:0];
+            data[addr + 1] <= writeData[15:8];
+            data[addr + 0] <= writeData[23:16];
+          end
+          3'h2: begin
+            data[addr + 1] <= writeData[7:0];
+            data[addr + 0] <= writeData[15:8];
+          end
+          3'h1: begin
+            data[addr + 0] <= writeData[7:0];
+          end
+          default: ;
+        endcase
+      end else begin
+        case (oplen)
+          3'h4: begin
+            out[7:0] <= data[addr + 32'h0003];
+            out[15:8] <= data[addr + 32'h0002];
+            out[23:16] <= data[addr + 32'h0001];
+            out[31:24] <= data[addr + 32'h0000];
+          end
+          3'h3: begin
+            out[7:0] <= data[addr + 32'h0002];
+            out[15:8] <= data[addr + 32'h0001];
+            out[23:16] <= data[addr + 32'h0000];
+          end
+          3'h2: begin
+            out[7:0] <= data[addr + 32'h0001];
+            out[15:8] <= data[addr + 32'h0000];
+          end
+          3'h1: begin
+            out[7:0] <= data[addr + 32'h0000];
+          end
+          default: out <= 32'hfeef;
+        endcase
+      end
     end
   end
 

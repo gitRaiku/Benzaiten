@@ -21,10 +21,9 @@ module alu(
   input logic [31:0]in2,
   output logic [31:0]out
   );
-  aluop temp;
 
   always_comb begin
-    case(op)
+    case (op)
       ALU_ADD: out <= in1 + in2;
       ALU_SUB: out <= in1 - in2;
       ALU_AND: out <= in1 & in2;

@@ -7,17 +7,19 @@ module ramcon(
   input logic [31:0]address,
   input logic [6:0]op,
   input logic [2:0]opLen, 
-  input logic [31:0]writedata
+  input logic [31:0]writedata,
+  output logic [31:0]out
   );
 
   logic [31:0]addr;
   logic [2:0]rlen;
-  logic [31:0]out;
   logic rw;
 
+  /*
   always_comb begin
     if (pc == 32'h60) $stop;
   end
+  */
 
   always_comb begin
     if (!rst_n) begin

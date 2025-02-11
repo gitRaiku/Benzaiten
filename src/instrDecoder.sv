@@ -3,8 +3,7 @@ import defs::*;
 
 //// TODO: COMPLETE
 
-module instrDecoder(input logic [31:0]instr);
-  logic [6:0]op;
+module instrDecoder(input logic [31:0]instr, output logic [6:0]op);
   instype instrType;
   logic [9:0]func;
   logic [4:0]rs1;
