@@ -2,58 +2,81 @@
 
 // inout io_sd_dat0, io_sd_dat1, io_sd_dat2, io_sd_dat3, io_sd_cmd, io_sd_clk,
 module main(
-  input logic clk, rst_n, button_1,
-  output led_1, led_2,
+  input logic clk_50_in, rst_n, button_1_n,
+  output led_1_n, led_2_n,
 
-  output clk_out, rst_n_out, led_1_out, clk_out_true
+  output clk_out, rst_n_out, led_1_n_out, clk_out_true,
+
+  output s_clk, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_cke,
+  output [1:0]s_dqm,
+  output [1:0]s_bs,
+  output [12:0]s_addr,
+  inout  [15:0] s_dq
   );
 
-  logic locked;
+  logic clk_locked;
+  logic clk_10, clk_50, clk_100;
+  clk_wiz_1 clankka(.clk_out1(clk_50), .clk_out2(clk_100), .clk_out3(clk_10), .locked(clk_locked),
+                    .resetn(rst_n), .clk_in1(clk_50_in));
+  assign clk_out = clk_50;
 
-  clk_wiz_0 clankka(.clk_out1(clk_out), .reset(!rst_n), .locked(locked), .clk_in1(clk));
+  logic [31:0]addr;
 
-  logic [24:0]addr;
 
-  assign led_1 = addr[10];
-  assign led_2 = addr[16];
+  assign led_2_n = !addr[25];
 
-  assign led_1_out = led_1;
+  assign led_1_n_out = led_1_n;
   assign rst_n_out = rst_n;
-  assign clk_out_true = clk;
+  assign clk_out_true = clk_50;
 
-  always_ff @(negedge rst_n or posedge clk_out) begin
+  always_ff @(posedge clk_50) begin
     if (!rst_n) begin
-      addr <= 25'h0000;
+      addr <= 32'h0000;
     end else begin
-      if (!button_1) begin
-        addr <= addr + 4;
+      if (button_1_n) begin
+        addr <= addr + 1;
       end
     end
   end
 
-  /*
+  logic [24:0]sd_addr;
+  logic [ 1:0]sd_oplen;
+  logic [31:0]sd_wdata;
+  logic [31:0]sd_result;
+  logic sd_rw;
+  logic sd_enable;
+
+  always_ff @(posedge clk_50) begin
+    sd_addr <= 0;
+    sd_oplen <= 1;
+    sd_wdata <= 0;
+    sd_rw <= 0;
+    sd_enable <= 1;
+  end
+
+  assign s_clk = clk_50;
   sdramController sukondez(
-    .clk(clk),
+    .clk(s_clk),
     .rst_n(rst_n),
-    .addr(addr),
-    .oplen(),
-    .wdata(),
-    .rw(),
-    .enable(),
-    .s_address(),
-    .s_bankselect(),
-    .s_dq(),
-    .s_cs(),
-    .s_ras(),
-    .s_cas(),
-    .s_we(),
-    .s_dqm(),
-    .s_clk(),
-    .s_cke());
-    */
+    .addr(sd_addr),
+    .oplen(sd_oplen),
+    .wdata(sd_wdata),
+    .rw(sd_rw),
+    .enable(sd_enable),
+    .result(sd_result),
+    .s_cs_n(s_cs_n),
+    .s_ras_n(s_ras_n),
+    .s_cas_n(s_cas_n),
+    .s_we_n(s_we_n),
+    .s_cke(s_cke),
+    .s_dqm(s_dqm),
+    .s_addr(s_addr),
+    .s_bs(s_bs),
+    .s_dq(s_dq)
+    );
 
+  assign led_1_n = !(sd_result == 16'h00be);
 
-  /*
   logic [31:0]pc;
   logic [31:0]pcnext;
   logic [31:0]jumplen;
@@ -79,6 +102,5 @@ module main(
   end
 
   instructionDecoder idec(.instr(ramread), .op(iop));
-  */
 
 endmodule

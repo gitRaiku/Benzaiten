@@ -3,6 +3,7 @@
 BUILDDIR="/tmp/cbuild"
 CPWD=$(pwd)
 SOURCE_FOLDER=$CPWD/src
+CONSTR_FOLDER=$CPWD/constr
 PART_NUM="xc7a15tcsg325-1"
 TOP_MODULE="main"
 
@@ -44,6 +45,7 @@ echo "open_project $CPWD/vivado/rv32i.xpr" >> a.tcl
 readd() {
   echo "add_files [glob $SOURCE_FOLDER/*.sv]" >> a.tcl
   echo "add_files [glob $SOURCE_FOLDER/*.v]" >> a.tcl
+  echo "add_files [glob $CONSTR_FOLDER/*.xdc]" >> a.tcl
   echo 'update_compile_order -fileset sources_1' >> a.tcl
 }
 
@@ -55,7 +57,7 @@ synth() {
 
 implement() {
   echo 'reset_run impl_1' >> a.tcl
-  echo 'launch_runs impl_1 -to_step write_bitstream' >> a.tcl
+  echo 'launch_runs impl_1 -to_step write_bitstream -jobs 16' >> a.tcl
   echo 'wait_on_run impl_1' >> a.tcl
 }
 

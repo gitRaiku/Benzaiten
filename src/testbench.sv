@@ -3,7 +3,10 @@
 module testbench();
   logic clk, rst_n;
   logic led_1;
-  main pula(.clk(clk), .rst_n(rst_n), .led_1(led_1));
+
+  main pula(
+  .clk_50_in(clk),
+  .rst_n(rst_n));
 
   initial begin
     clk <= 0;
