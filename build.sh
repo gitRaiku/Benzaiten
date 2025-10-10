@@ -75,10 +75,10 @@ upload() {
   echo 'close_hw' >> a.tcl
 }
 
+    # /Exiting Vivado at/ { system("killall -9 vivado"); next }
 run() {
   stdbuf -o0 -e0 vivado -mode batch -source a.tcl 2>&1 | awk '
     function color(c,s) { printf("\033[%dm%s\033[0m\n",30+c,s) }
-    /Exiting Vivado at/ { system("killall -9 vivado"); next }
     /^ERROR:/   { color(1, $0); next }
     /^WARNING:/ { color(3, $0); next }
     /^INFO:/    { color(2, $0); next }
