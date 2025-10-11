@@ -1,11 +1,10 @@
 `timescale 1ns / 1ps
+import defs::*;
 
 // inout io_sd_dat0, io_sd_dat1, io_sd_dat2, io_sd_dat3, io_sd_cmd, io_sd_clk,
 module main(
   input logic clk_50_in, rst_n, button_1_n,
   output led_1_n, led_2_n,
-
-  output clk_out, rst_n_out, led_1_n_out, clk_out_true,
 
   output s_clk, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_cke,
   output [1:0]s_dqm,
@@ -14,77 +13,102 @@ module main(
   inout  [15:0]s_dq
   );
 
+  /*
   logic clk_locked;
   logic clk_10, clk_50, clk_100;
-  /*
   clk_wiz_1 clankka(.clk_out1(clk_50), .clk_out2(clk_100), .clk_out3(clk_10), .locked(clk_locked),
                     .resetn(rst_n), .clk_in1(clk_50_in));
-                    */
-  assign clk_50 = clk_50_in;
-  assign clk_out = clk_50;
+  */
+  assign clk = clk_50_in;
+  assign clk_out = clk;
 
-  logic [31:0]addr;
+  assign led_2_n = 1;
+  assign led_1_n = button_1_n;
 
+  logic [6:0]instr_op;
+  logic [9:0]instr_func;
+  logic [4:0]instr_rs1;
+  logic [4:0]instr_rs2;
+  logic [4:0]instr_rd;
+  logic [31:0]instr_imm;
+  logic [2:0]instr_wlen;
+  instype_t instr_type;
 
-  assign led_2_n = !addr[25];
-  assign led_1_n = 1;
+  logic regfile_we;
+  logic [31:0]regfile_data;
+  logic [31:0]regfile_r1;
+  logic [31:0]regfile_r2;
 
-  assign led_1_n_out = led_1_n;
-  assign rst_n_out = rst_n;
-  assign clk_out_true = clk_50;
+  logic [31:0]alu_result;
 
-  always_ff @(posedge clk_50) begin
-    if (!rst_n) begin
-      addr <= 32'h0000;
-    end else begin
-      if (button_1_n) begin
-        addr <= addr + 1;
-      end
-    end
-  end
+  logic ram_instr_enable, ram_instr_valid;
+  logic ram_data_enable, ram_data_valid;
+  logic [1:0]ram_data_oplen;
+  logic [24:0]ram_data_addr;
+  logic [31:0]ram_data_wdata;
+  logic ram_data_rw;
+  assign ram_data_oplen = 2'bZZ;
+  assign ram_data_addr = 32'hZZZZ;
+  assign ram_data_wdata = 32'hbeef;
+  assign ram_data_rw = 1'b1;
 
-  logic [24:0]sd_addr;
-  logic [ 1:0]sd_oplen;
-  logic [31:0]sd_wdata;
-  logic [31:0]sd_result;
-  logic sd_rw;
-  logic sd_enable;
+  logic [31:0]instruction;
+  logic [31:0]pc;
+  logic [31:0]pcnext;
+  logic [31:0]jumplen;
 
-  always_ff @(posedge clk_50) begin
-    sd_addr <= 0;
-    sd_oplen <= 1;
-    sd_wdata <= 0;
-    sd_rw <= 0;
-    sd_enable <= 1;
-  end
-
-  assign s_clk = clk_50;
   logic bus_stall;
+  assign bus_stall = !ram_instr_valid || !ram_data_valid;
 
-  logic instr_enable, instr_valid;
-  logic data_enable, data_valid;
-  assign bus_stall = !instr_valid || !data_valid;
+  task automatic handle_instr_op;
+    begin
+      case (instr_op)
+        7'b00000_11: begin // LUI
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+          regfile_data <= 32'hXXXX;
+          regfile_we <= 1'b1;
+        end
+        7'b01000_11: begin // AUIPC
+          regfile_data <= 32'h0000;
+          regfile_we <= 1'b0;
+        end
+        7'b11001_11,7'b11011_11: begin // JAL JALR
+          regfile_data <= pc + 4;
+          regfile_we <= 1'b1;
+        end
+        default: begin // ALU operation
+          regfile_data <= alu_result;
+          regfile_we <= 1'b1;
+        end
+      endcase
+    end
+  endtask
 
-  logic [31:0]cinstruction;
-  logic [24:0]pc;
-  logic [24:0]pcnext;
-  logic [24:0]jumplen;
-  always_ff @(negedge rst_n or posedge clk_50) begin
+  always_ff @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
       pc <= 32'h0000;
-      pcnext <= 32'h0000;
+      pcnext <= 32'h0004;
       jumplen <= 32'h0004;
-      instr_enable <= 1;
+      ram_instr_enable <= 1;
+      ram_data_enable <= 1'b1;
+      regfile_data <= 32'h0000;
+      regfile_we <= 1'b0;
     end else begin
       if (!bus_stall) begin
         pcnext <= pc + jumplen;
         pc <= pcnext;
-        instr_enable <= 1;
-        if (pc == 24'h08) begin
-          data_enable <= 1'b1;
-        end else begin
-          data_enable <= 1'b0;
-        end
+        ram_instr_enable <= 1;
+
+        handle_instr_op;
       end
     end
   end
@@ -92,31 +116,32 @@ module main(
   sdramController sdram(
     .clk(s_clk), .rst_n(rst_n),
 
-    .instr_addr(pc),
-    .instr_result(cinstruction),
-    .instr_enable(instr_enable),
-    .instr_valid(instr_valid),
+    .instr_addr(pc[24:0]),
+    .instr_result(instruction),
 
-    .data_enable(data_enable), .data_valid(data_valid), .data_oplen(),
-    .data_addr(), .data_wdata(32'hfeef), .data_rw(1'b1),
+    .instr_enable(ram_instr_enable), .instr_valid(ram_instr_valid),
+    .data_enable(ram_data_enable), .data_valid(ram_data_valid), .data_oplen(ram_data_oplen),
+    .data_addr(ram_data_addr), .data_wdata(ram_data_wdata), .data_rw(ram_data_rw),
 
-    .s_cs_n(s_cs_n),
+    .s_clk(s_clk), .s_cs_n(s_cs_n),
     .s_ras_n(s_ras_n), .s_cas_n(s_cas_n),
     .s_we_n(s_we_n), .s_cke(s_cke),
     .s_dqm(s_dqm), .s_addr(s_addr),
     .s_bs(s_bs), .s_dq(s_dq)
     );
 
+  instructionDecoder idec(.instr(instruction), .op(instr_op),
+                          .func(instr_func), .rs1(instr_rs1),
+                          .rs2(instr_rs2), .rd(instr_rd),
+                          .imm(instr_imm), .writeLen(instr_wlen),
+                          .instrType(instr_type)
+  );
 
-  logic [6:0]iop;
-  instructionDecoder idec(.instr(cinstruction), .op(iop));
-
-  logic regfile_we;
-  logic [31:0]regfile_wb;
-  logic [31:0]regfile_r1;
-  logic [31:0]regfile_r2;
   regfile rf(.clk(clk), .rst_n(rst_n), .write_enabled(regfile_we),
-             .rs1(idec.rs1), .rs2(idec.rs2), .rd(idec.rd),
-             .data(regfile_wb), .res1(regfile_r1), .res2(regfile_r2));
+             .rs1(instr_rs1), .rs2(instr_rs2), .rd(instr_rd),
+             .data(regfile_data), .res1(regfile_r1), .res2(regfile_r2));
+
+  alucon acon(.op(instr_op), .func(instr_func), .pc(pc), .itype(instr_type),
+              .rf1(regfile_rf1), .rf2(regfile_rf2), .imm(instr_imm), .result(alu_result));
 
 endmodule

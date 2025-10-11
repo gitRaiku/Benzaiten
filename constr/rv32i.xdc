@@ -20,18 +20,18 @@ set_property IOSTANDARD LVCMOS33 [get_ports button_1_n]
 set_property PACKAGE_PIN R2 [get_ports clk_50_in]
 set_property IOSTANDARD LVCMOS33 [get_ports clk_50_in]
 
-set_property PACKAGE_PIN V2 [get_ports clk_out]
-set_property IOSTANDARD LVCMOS33 [get_ports clk_out]
-
-set_property PACKAGE_PIN T3 [get_ports rst_n_out]
-set_property IOSTANDARD LVCMOS33 [get_ports rst_n_out]
-
-set_property PACKAGE_PIN P3 [get_ports led_1_n_out]
-set_property IOSTANDARD LVCMOS33 [get_ports led_1_n_out]
-
-set_property PACKAGE_PIN L4 [get_ports clk_out_true]
-set_property IOSTANDARD LVCMOS33 [get_ports clk_out_true]
-
+# set_property PACKAGE_PIN V2 [get_ports clk_out]
+# set_property IOSTANDARD LVCMOS33 [get_ports clk_out]
+# 
+# set_property PACKAGE_PIN T3 [get_ports rst_n_out]
+# set_property IOSTANDARD LVCMOS33 [get_ports rst_n_out]
+# 
+# set_property PACKAGE_PIN P3 [get_ports led_1_n_out]
+# set_property IOSTANDARD LVCMOS33 [get_ports led_1_n_out]
+# 
+# set_property PACKAGE_PIN L4 [get_ports clk_out_true]
+# set_property IOSTANDARD LVCMOS33 [get_ports clk_out_true]
+# 
 set_property PACKAGE_PIN P16 [get_ports s_clk]
 set_property IOSTANDARD LVCMOS33 [get_ports s_clk]
 set_property PACKAGE_PIN R16 [get_ports s_cke]

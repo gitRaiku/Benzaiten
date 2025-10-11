@@ -1,14 +1,17 @@
 `timescale 1ns / 1ps
 import defs::*;
 
-module instructionDecoder(input logic [31:0]instr, output logic [6:0]op);
-  instype_t instrType;
-  logic [9:0]func;
-  logic [4:0]rs1;
-  logic [4:0]rs2;
-  logic [4:0]rd;
-  logic [31:0]imm;
-  logic [2:0]writeLen;
+module instructionDecoder(
+  input logic [31:0]instr,
+  output logic [6:0]op,
+  output logic [9:0]func,
+  output logic [4:0]rs1,
+  output logic [4:0]rs2,
+  output logic [4:0]rd,
+  output logic [31:0]imm,
+  output logic [2:0]writeLen,
+  output instype_t instrType
+  );
 
   /*
     * 000 R-Type (Register / Register)

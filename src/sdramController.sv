@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module sdramController(
   input logic clk, rst_n,
   input  logic        instr_enable,
@@ -12,12 +14,14 @@ module sdramController(
   input logic [31:0]  data_wdata,
   input logic         data_rw,
 
-  output logic        s_cs_n,
+  output logic        s_clk,   output logic        s_cs_n,
   output logic        s_ras_n, output logic        s_cas_n,
   output logic        s_we_n,  output logic        s_cke,
   output logic [1:0]  s_dqm,   output logic [12:0] s_addr,
   output logic [1:0]  s_bs,    inout  logic [15:0] s_dq
 );
+
+assign s_clk = clk;
 
 logic [3:0]startupStep;
 logic [15:0]dq;
@@ -32,6 +36,7 @@ assign s_dq = dq;
  */
 
 
+/*
 logic [6:0]powerupState;
 localparam logic[6:0] MAX_POWERUP_STATE = 7'd80;
 localparam logic[15:0] HI_Z = 16'hZZZZ;
@@ -60,39 +65,37 @@ task automatic nop;
   end
 endtask
 
-/*
-  task precharge_bank_0;
-    input [1 : 0] dqm_in;
-    input [15 : 0] dq_in;
-    begin
-      cke   = 1;
-      cs_n  = 0;
-      ras_n = 0;
-      cas_n = 1;
-      we_n  = 0;
-      dqm   = dqm_in;
-      ba    = 0;
-      addr  = 0;
-      dq    = dq_in;
-    end
-  endtask
+task precharge_bank_0;
+  input [1 : 0] dqm_in;
+  input [15 : 0] dq_in;
+  begin
+    cke   = 1;
+    cs_n  = 0;
+    ras_n = 0;
+    cas_n = 1;
+    we_n  = 0;
+    dqm   = dqm_in;
+    ba    = 0;
+    addr  = 0;
+    dq    = dq_in;
+  end
+endtask
 
-  task precharge_bank_1;
-    input [1 : 0] dqm_in;
-    input [15 : 0] dq_in;
-    begin
-      cke   = 1;
-      cs_n  = 0;
-      ras_n = 0;
-      cas_n = 1;
-      we_n  = 0;
-      dqm   = dqm_in;
-      ba    = 1;
-      addr  = 0;
-      dq    = dq_in;
-    end
-  endtask
-*/
+task precharge_bank_1;
+  input [1 : 0] dqm_in;
+  input [15 : 0] dq_in;
+  begin
+    cke   = 1;
+    cs_n  = 0;
+    ras_n = 0;
+    cas_n = 1;
+    we_n  = 0;
+    dqm   = dqm_in;
+    ba    = 1;
+    addr  = 0;
+    dq    = dq_in;
+  end
+endtask
 
 task automatic precharge_banks;
   begin
@@ -187,7 +190,6 @@ task automatic read;
   end
 endtask
 
-/*
 always_ff @(posedge clk) begin
   if (!rst_n) begin
     result <= 32'h0000;
@@ -261,6 +263,7 @@ always_ff @(posedge clk) begin
         if (instr_enable) begin instr_valid <= 1'b0; end
       end
     end else if (instr_enable && instr_valid && instr_read_delay == 16'h00) begin
+      if ((instr_addr >> 2) > 17) begin $stop(); end
       instr_result <= {ops[instr_addr >> 2][31:0]};
       instr_read_delay <= 8;
     end else if (instr_read_delay > 0) begin

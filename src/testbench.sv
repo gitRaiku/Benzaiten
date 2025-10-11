@@ -2,7 +2,6 @@
 
 module testbench();
   logic clk, rst_n;
-  logic led_1;
 
   main pula(
   .clk_50_in(clk),
