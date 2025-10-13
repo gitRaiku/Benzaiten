@@ -54,7 +54,6 @@ module main(
 
   logic [31:0]instruction;
   logic [31:0]pc;
-  logic [31:0]pcnext;
   logic [31:0]jumplen;
 
   logic bus_stall;
@@ -62,23 +61,27 @@ module main(
 
   task automatic handle_instr_op;
     begin
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
+        //// TODO LOAD INSTRUCTIONS
       case (instr_op)
-        7'b00000_11: begin // LUI
+        7'b00000_11: begin // Load from ram
         //// TODO LOAD INSTRUCTIONS
         //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-          regfile_data <= 32'hXXXX;
+          //ram_data_enable <= 1'b1;
+          // ram_data_addr <= regfile_r1 + instr_imm;
+          regfile_data <= (instr_imm << 12);
           regfile_we <= 1'b1;
         end
-        7'b01000_11: begin // AUIPC
-          regfile_data <= 32'h0000;
+        7'b01000_11: begin // Store from mem
+        //// TODO STORE INSTRUCTIONS
+        //// TODO STORE INSTRUCTIONS
+          regfile_data <= (instr_imm << 12) + pc;
           regfile_we <= 1'b0;
         end
         7'b11001_11,7'b11011_11: begin // JAL JALR
@@ -93,19 +96,26 @@ module main(
     end
   endtask
 
+  always_comb begin
+    case (instr_op)
+      7'b11001_11: jumplen = alu_result; // JALR
+      7'b11011_11: jumplen = instr_imm; // JAL
+      7'b11000_11: jumplen = (alu_result[0] != instr_func[0]) ? instr_imm : 32'h0004; // BXX
+      default: jumplen = 32'h0004;
+    endcase
+  end
+
+
   always_ff @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
       pc <= 32'h0000;
-      pcnext <= 32'h0004;
-      jumplen <= 32'h0004;
-      ram_instr_enable <= 1;
-      ram_data_enable <= 1'b1;
+      ram_instr_enable <= 1'b1;
+      ram_data_enable <= 1'b0;
       regfile_data <= 32'h0000;
       regfile_we <= 1'b0;
     end else begin
       if (!bus_stall) begin
-        pcnext <= pc + jumplen;
-        pc <= pcnext;
+        pc <= pc + jumplen;
         ram_instr_enable <= 1;
 
         handle_instr_op;
@@ -114,7 +124,7 @@ module main(
   end
 
   sdramController sdram(
-    .clk(s_clk), .rst_n(rst_n),
+    .clk(clk), .rst_n(rst_n),
 
     .instr_addr(pc[24:0]),
     .instr_result(instruction),
@@ -142,6 +152,6 @@ module main(
              .data(regfile_data), .res1(regfile_r1), .res2(regfile_r2));
 
   alucon acon(.op(instr_op), .func(instr_func), .pc(pc), .itype(instr_type),
-              .rf1(regfile_rf1), .rf2(regfile_rf2), .imm(instr_imm), .result(alu_result));
+              .rf1(regfile_r1), .rf2(regfile_r2), .imm(instr_imm), .result(alu_result));
 
 endmodule
