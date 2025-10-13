@@ -43,14 +43,12 @@ module main(
 
   logic ram_instr_enable, ram_instr_valid;
   logic ram_data_enable, ram_data_valid;
+  logic ram_data_unsigned;
   logic [1:0]ram_data_oplen;
   logic [24:0]ram_data_addr;
   logic [31:0]ram_data_wdata;
+  logic [31:0]ram_data_result;
   logic ram_data_rw;
-  assign ram_data_oplen = 2'bZZ;
-  assign ram_data_addr = 32'hZZZZ;
-  assign ram_data_wdata = 32'hbeef;
-  assign ram_data_rw = 1'b1;
 
   logic [31:0]instruction;
   logic [31:0]pc;
@@ -73,8 +71,10 @@ module main(
         7'b00000_11: begin // Load from ram
         //// TODO LOAD INSTRUCTIONS
         //// TODO LOAD INSTRUCTIONS
-          //ram_data_enable <= 1'b1;
-          // ram_data_addr <= regfile_r1 + instr_imm;
+          ram_data_enable <= 1'b1;
+          ram_data_addr <= regfile_r1 + instr_imm;
+          ram_data_rw <= 1'b0;
+          ram_data_oplen <= 1'b0;
           regfile_data <= (instr_imm << 12);
           regfile_we <= 1'b1;
         end
@@ -129,9 +129,10 @@ module main(
     .instr_addr(pc[24:0]),
     .instr_result(instruction),
 
-    .instr_enable(ram_instr_enable), .instr_valid(ram_instr_valid),
-    .data_enable(ram_data_enable), .data_valid(ram_data_valid), .data_oplen(ram_data_oplen),
+    .instr_enable(ram_instr_enable), .instr_valid(ram_instr_valid), .data_enable(ram_data_enable),
+    .data_valid(ram_data_valid), .data_oplen(ram_data_oplen), .data_unsigned(ram_data_unsigned),
     .data_addr(ram_data_addr), .data_wdata(ram_data_wdata), .data_rw(ram_data_rw),
+    .data_result(ram_data_result),
 
     .s_clk(s_clk), .s_cs_n(s_cs_n),
     .s_ras_n(s_ras_n), .s_cas_n(s_cas_n),
