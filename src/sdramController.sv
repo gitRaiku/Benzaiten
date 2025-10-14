@@ -68,9 +68,7 @@ always_ff @(posedge clk) begin
 
     ops[ 3] <= 32'b000000000110_00010_000_00010_0010011 ; /// x2 = x2 + 0x06
     ops[ 4] <= 32'b000000100001_00000_000_00001_0010011 ; /// x1 = x0 + 0x21
-    ops[ 5] <= 32'b0000000_00000_00000_000_00000_0110011; /// NOP
-    // ops[ 5] <= 32'b1111111_00001_00010_010_11111_0100011; /// sw x1, (-1)x2
-    // ops[ 6] <= 32'b0000000_00000_00000_000_00000_0110011; /// NOP
+    ops[ 5] <= 32'b1111111_00001_00010_010_11111_0100011; /// sw x1, (-1)x2
     ops[ 6] <= 32'b111111111111_00010_010_00011_0000011 ; /// lw x3, (-1)x2
     ops[ 7] <= 32'b01010101010101010101_00100_0110111   ; /// x4 = 0x0101 << 12
     ops[ 8] <= 32'b010101010101_00100_000_00100_0010011 ; /// x4 = x0 + 0x01
@@ -109,9 +107,9 @@ always_ff @(posedge clk) begin
       end else begin
         unique case (data_oplen)
           2'b00:internal_data_result <= {24'h0000, shittyram[data_addr >> 2][7:0]};
-          2'b00:internal_data_result <= {16'h0000, shittyram[data_addr >> 2][15:0]};
-          2'b00:internal_data_result <= {8'h0000, shittyram[data_addr >> 2][23:0]};
-          2'b00:internal_data_result <= {shittyram[data_addr >> 2][31:0]};
+          2'b01:internal_data_result <= {16'h0000, shittyram[data_addr >> 2][15:0]};
+          2'b10:internal_data_result <= {8'h0000, shittyram[data_addr >> 2][23:0]};
+          2'b11:internal_data_result <= {shittyram[data_addr >> 2][31:0]};
         endcase
       end
       data_read_delay <= 8;

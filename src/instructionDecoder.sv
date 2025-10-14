@@ -9,7 +9,7 @@ module instructionDecoder(
   output logic [4:0]rs2,
   output logic [4:0]rd,
   output logic [31:0]imm,
-  output logic [2:0]writeLen,
+  output logic [1:0]oplen,
   output instype_t instrType
   );
 
@@ -100,20 +100,20 @@ module instructionDecoder(
   always_comb begin
     if (instrType == INS_S) begin /// TODO: Pretty
       case (func[2:0])
-        3'b000: writeLen = 3'h1;
-        3'b001: writeLen = 3'h2;
-        3'b010: writeLen = 3'h4;
-        default: writeLen = 3'h0;
+        3'b000: oplen = 2'h0;
+        3'b001: oplen = 2'h1;
+        3'b010: oplen = 2'h3;
+        default: oplen = 2'h0;
       endcase
     end else if (instrType == INS_I && op == 7'b00000_11) begin
       case (func[2:0])
-        3'b000: writeLen = 3'h1;
-        3'b001: writeLen = 3'h2;
-        3'b010: writeLen = 3'h4;
-        default: writeLen = 3'h0;
+        3'b000: oplen = 2'h0;
+        3'b001: oplen = 2'h1;
+        3'b010: oplen = 2'h3;
+        default: oplen = 2'h0;
       endcase
     end else begin
-      writeLen = 3'h0;
+      oplen = 3'h0;
     end
   end
 

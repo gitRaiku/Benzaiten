@@ -31,13 +31,13 @@ module main(
   logic [4:0]instr_rs2;
   logic [4:0]instr_rd;
   logic [31:0]instr_imm;
-  logic [2:0]instr_wlen;
+  logic [1:0]instr_oplen;
   instype_t instr_type;
 
   logic regfile_we;
   logic [31:0]regfile_data;
-  logic [31:0]regfile_r1;
-  logic [31:0]regfile_r2;
+  logic [31:0]regfile_res1;
+  logic [31:0]regfile_res2;
 
   logic [31:0]alu_result;
 
@@ -58,22 +58,6 @@ module main(
 
   logic bus_stall;
   assign bus_stall = (ram_instr_enable && !ram_instr_valid) || (ram_data_enable && !ram_data_valid);
-
-  task automatic handle_instr_op;
-    begin
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-    end
-  endtask
-
-  always_comb begin
-  end
 
   cpustage_t state;
   always_ff @(negedge rst_n or posedge clk) begin
@@ -106,13 +90,20 @@ module main(
         CPU_EX: begin
           case (instr_op)
             7'b00000_11: begin // Load from ram
-              ram_data_enable <= 1'b1; //// TODO LOAD INSTRUCTIONS
+              ram_data_enable <= 1'b1;
               ram_data_addr <= alu_result;
               ram_data_rw <= 1'b0;
-              ram_data_oplen <= 1'b0;
-              regfile_data <= 32'hZZZZ;
+              ram_data_oplen <= instr_oplen;
+              ram_data_unsigned <= instr_func[2];
+              regfile_data <= 32'h0000;
             end
             7'b01000_11: begin // Store to ram
+              ram_data_enable <= 1'b1;
+              ram_data_addr <= alu_result;
+              ram_data_rw <= 1'b1;
+              ram_data_wdata <= regfile_res2;
+              ram_data_oplen <= instr_oplen;
+              regfile_data <= 32'h0000;
             end
             7'b11001_11,7'b11011_11: begin // JAL JALR
               regfile_data <= pc + 4;
@@ -174,15 +165,15 @@ module main(
   instructionDecoder idec(.instr(instruction), .op(instr_op),
                           .func(instr_func), .rs1(instr_rs1),
                           .rs2(instr_rs2), .rd(instr_rd),
-                          .imm(instr_imm), .writeLen(instr_wlen),
+                          .imm(instr_imm), .oplen(instr_oplen),
                           .instrType(instr_type)
   );
 
   regfile rf(.clk(clk), .rst_n(rst_n), .write_enabled(regfile_we),
              .rs1(instr_rs1), .rs2(instr_rs2), .rd(instr_rd),
-             .data(regfile_data), .res1(regfile_r1), .res2(regfile_r2));
+             .data(regfile_data), .res1(regfile_res1), .res2(regfile_res2));
 
   alucon acon(.op(instr_op), .func(instr_func), .pc(pc), .itype(instr_type),
-              .rf1(regfile_r1), .rf2(regfile_r2), .imm(instr_imm), .result(alu_result));
+              .rf1(regfile_res1), .rf2(regfile_res2), .imm(instr_imm), .result(alu_result));
 
 endmodule
