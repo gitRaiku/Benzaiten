@@ -66,12 +66,12 @@ always_ff @(posedge clk) begin
     ops[ 1] <= 32'b0000000_00000_00000_000_00000_0110011; /// NOP
     ops[ 2] <= 32'b0000000_00000_00000_000_00000_0110011; /// NOP
 
-    ops[ 3] <= 32'b000010000001_00010_000_00010_0010011 ; /// x2 = x2 + 0x41
+    ops[ 3] <= 32'b000000000110_00010_000_00010_0010011 ; /// x2 = x2 + 0x06
     ops[ 4] <= 32'b000000100001_00000_000_00001_0010011 ; /// x1 = x0 + 0x21
     ops[ 5] <= 32'b0000000_00000_00000_000_00000_0110011; /// NOP
     // ops[ 5] <= 32'b1111111_00001_00010_010_11111_0100011; /// sw x1, (-1)x2
-    ops[ 6] <= 32'b0000000_00000_00000_000_00000_0110011; /// NOP
-    // ops[ 6] <= 32'b111111111111_00010_010_00011_0000011 ; /// lw x3, (-1)x2
+    // ops[ 6] <= 32'b0000000_00000_00000_000_00000_0110011; /// NOP
+    ops[ 6] <= 32'b111111111111_00010_010_00011_0000011 ; /// lw x3, (-1)x2
     ops[ 7] <= 32'b01010101010101010101_00100_0110111   ; /// x4 = 0x0101 << 12
     ops[ 8] <= 32'b010101010101_00100_000_00100_0010011 ; /// x4 = x0 + 0x01
     ops[ 9] <= 32'b01010101010101010101_00100_0010111   ; /// x4 = 0x0101 << 12 + pc
@@ -86,13 +86,19 @@ always_ff @(posedge clk) begin
     ops[18] <= 32'b000000000000_00000_000_00001_0010011 ; /// x1 = 0
     ops[19] <= 32'b000000000000_00000_000_00001_0010011 ; /// x1 = 0
     ops[20] <= 32'b000000000000_00000_000_00001_0010011 ; /// x1 = 0
-    instr_valid <= 1'b1;
+    shittyram[0] <= 32'h0001; shittyram[1] <= 32'h0002; shittyram[2] <= 32'h0003;
+    shittyram[3] <= 32'h0004; shittyram[4] <= 32'h0005; shittyram[5] <= 32'h0006;
+    shittyram[6] <= 32'h0007; shittyram[7] <= 32'h0008; shittyram[8] <= 32'h0009;
+
+    instr_valid <= 1'b0;
     instr_read_delay <= 16'h00;
-    data_valid <= 1'b1;
+    data_valid <= 1'b0;
     data_read_delay <= 16'h00;
   end else begin
     // TODO: Handle non aligned reads
-    if (data_enable && data_valid && data_read_delay == 16'h00) begin
+    data_valid <= 1'b0;
+    instr_valid <= 1'b0;
+    if (data_enable && !data_valid && data_read_delay == 16'h00) begin
       if (data_rw) begin
         unique case (data_oplen)
           2'b00: shittyram[data_addr >> 2][7:0] <= data_wdata[7:0];
@@ -116,10 +122,11 @@ always_ff @(posedge clk) begin
         data_valid <= 1'b1;
         if (instr_enable) begin instr_valid <= 1'b0; end
       end
-    end else if (instr_enable && instr_valid && instr_read_delay == 16'h00) begin
+    end else if (instr_enable && !instr_valid && instr_read_delay == 16'h00) begin
       if ((instr_addr >> 2) > 18) begin $stop(); end
       instr_result <= {ops[instr_addr >> 2][31:0]};
       instr_read_delay <= 8;
+      instr_valid <= 1'b0;
     end else if (instr_read_delay > 0) begin
       instr_valid <= 1'b0;
       instr_read_delay <= instr_read_delay - 1;

@@ -41,6 +41,8 @@ module main(
 
   logic [31:0]alu_result;
 
+  logic [31:0]ram_instr_result;
+  logic [31:0]ram_instr_addr;
   logic ram_instr_enable, ram_instr_valid;
   logic ram_data_enable, ram_data_valid;
   logic ram_data_unsigned;
@@ -55,7 +57,7 @@ module main(
   logic [31:0]jumplen;
 
   logic bus_stall;
-  assign bus_stall = !ram_instr_valid || !ram_data_valid;
+  assign bus_stall = (ram_instr_enable && !ram_instr_valid) || (ram_data_enable && !ram_data_valid);
 
   task automatic handle_instr_op;
     begin
@@ -67,67 +69,95 @@ module main(
         //// TODO LOAD INSTRUCTIONS
         //// TODO LOAD INSTRUCTIONS
         //// TODO LOAD INSTRUCTIONS
-      case (instr_op)
-        7'b00000_11: begin // Load from ram
-        //// TODO LOAD INSTRUCTIONS
-        //// TODO LOAD INSTRUCTIONS
-          ram_data_enable <= 1'b1;
-          ram_data_addr <= regfile_r1 + instr_imm;
-          ram_data_rw <= 1'b0;
-          ram_data_oplen <= 1'b0;
-          regfile_data <= (instr_imm << 12);
-          regfile_we <= 1'b1;
-        end
-        7'b01000_11: begin // Store from mem
-        //// TODO STORE INSTRUCTIONS
-        //// TODO STORE INSTRUCTIONS
-          regfile_data <= (instr_imm << 12) + pc;
-          regfile_we <= 1'b0;
-        end
-        7'b11001_11,7'b11011_11: begin // JAL JALR
-          regfile_data <= pc + 4;
-          regfile_we <= 1'b1;
-        end
-        default: begin // ALU operation
-          regfile_data <= alu_result;
-          regfile_we <= 1'b1;
-        end
-      endcase
     end
   endtask
 
   always_comb begin
-    case (instr_op)
-      7'b11001_11: jumplen = alu_result; // JALR
-      7'b11011_11: jumplen = instr_imm; // JAL
-      7'b11000_11: jumplen = (alu_result[0] != instr_func[0]) ? instr_imm : 32'h0004; // BXX
-      default: jumplen = 32'h0004;
-    endcase
   end
 
-
+  cpustage_t state;
   always_ff @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
       pc <= 32'h0000;
-      ram_instr_enable <= 1'b1;
+      ram_instr_enable <= 1'b0;
       ram_data_enable <= 1'b0;
       regfile_data <= 32'h0000;
       regfile_we <= 1'b0;
+      state <= CPU_FETCH;
     end else begin
-      if (!bus_stall) begin
-        pc <= pc + jumplen;
-        ram_instr_enable <= 1;
+      /*
+      * Read Instr
+      * (Read Data)
+      * Execute
+      */
+      regfile_we <= 1'b0;
+      ram_instr_enable <= 1'b0;
+      ram_data_enable  <= 1'b0;
+      unique case (state)
+        CPU_FETCH: begin
+          ram_instr_addr <= pc;
+          ram_instr_enable <= 1'b1;
+          if (ram_instr_valid) begin
+            ram_instr_enable <= 1'b0;
+            instruction <= ram_instr_result;
+            state <= CPU_EX;
+          end
+        end
+        CPU_EX: begin
+          case (instr_op)
+            7'b00000_11: begin // Load from ram
+              ram_data_enable <= 1'b1; //// TODO LOAD INSTRUCTIONS
+              ram_data_addr <= alu_result;
+              ram_data_rw <= 1'b0;
+              ram_data_oplen <= 1'b0;
+              regfile_data <= 32'hZZZZ;
+            end
+            7'b01000_11: begin // Store to ram
+            end
+            7'b11001_11,7'b11011_11: begin // JAL JALR
+              regfile_data <= pc + 4;
+            end
+            default: begin // ALU operation
+              regfile_data <= alu_result;
+            end
+          endcase
 
-        handle_instr_op;
-      end
+          case (instr_op)
+            7'b11001_11: jumplen <= alu_result; // JALR
+            7'b11011_11: jumplen <= instr_imm; // JAL
+            7'b11000_11: jumplen <= (alu_result[0] != instr_func[0]) ? instr_imm : 32'h0004; // BXX
+            default: jumplen <= 32'h0004;
+          endcase
+          state <= CPU_MEM; /// TODO: Shortcircuit
+        end
+        CPU_MEM: begin
+          if (ram_data_enable) begin
+            ram_data_enable <= 1'b1;
+            if (ram_data_valid) begin
+              ram_data_enable <= 1'b0;
+              regfile_data <= ram_data_result;
+              state <= CPU_WB;
+            end
+          end else begin
+            state <= CPU_WB;
+          end
+        end
+        CPU_WB: begin
+          if (instr_op != 7'b01000_11) begin // Store instructions
+            regfile_we <= 1'b1;
+          end
+          pc <= pc + jumplen;
+          state <= CPU_FETCH;
+        end
+      endcase
     end
   end
 
   sdramController sdram(
     .clk(clk), .rst_n(rst_n),
 
-    .instr_addr(pc[24:0]),
-    .instr_result(instruction),
+    .instr_addr(ram_instr_addr[24:0]),
+    .instr_result(ram_instr_result),
 
     .instr_enable(ram_instr_enable), .instr_valid(ram_instr_valid), .data_enable(ram_data_enable),
     .data_valid(ram_data_valid), .data_oplen(ram_data_oplen), .data_unsigned(ram_data_unsigned),
