@@ -98,7 +98,7 @@ module instructionDecoder(
   extender exte(.num(simm), .immU(immU), .out(imm));
 
   always_comb begin
-    if (instrType == INS_S) begin /// TODO: Pretty
+    if (instrType == INS_S) begin
       case (func[2:0])
         3'b000: oplen = 2'h0;
         3'b001: oplen = 2'h1;

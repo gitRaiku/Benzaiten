@@ -68,6 +68,16 @@ module main(
       regfile_data <= 32'h0000;
       regfile_we <= 1'b0;
       state <= CPU_FETCH;
+
+      ram_instr_addr <= 32'h00000000;
+      ram_data_addr <= 32'h00000000;
+      ram_data_rw <= 1'b0;
+      ram_data_oplen <= 1'b0;
+      ram_data_unsigned <= 1'b0;
+      ram_data_wdata <= 32'h00000000;
+
+      instruction <= 32'h00000013;
+      jumplen <= 32'h00000000;
     end else begin
       /*
       * Read Instr

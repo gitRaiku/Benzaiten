@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [ "$#" != "1" ]; then
+  echo "Usage ./compile <input.s>"
+  exit 1
+fi
+
+rv32-as --march=rv32i $1 -o $1.o
+
+if [ "$?" != "0" ]; then
+  exit 1
+fi
+
+rv32-objcopy -O binary $1.o $1.bin
+rm $1.o
+
+./printram $1.bin
+rm $1.bin
