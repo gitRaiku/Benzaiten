@@ -44,22 +44,41 @@ module sextender_m(input logic [31:0]in, input logic usgn,
   end
 endmodule
 
+assign s_clk = clk;
+
 logic [31:0]internal_data_result;
 sextender_m sextender(
   .in(internal_data_result), .usgn(data_unsigned),
   .len(data_oplen), .out(data_result));
 
-assign s_clk = clk;
-
-logic [3:0]startupStep;
-logic [15:0]dq;
-assign s_dq = dq;
+logic ram_enable, ram_valid;
+logic [24:0]ram_addr, ram_writeEnable;
+logic [31:0]ram_data;
+logic [31:0]ram_result;
+sdram ram(
+  .clk(clk),           .rst_n(rst_n),
+  .enable(ram_enable), .valid(ram_valid),
+  .addr(ram_addr),     .writeEnable(ram_writeEnable),
+  .data(ram_data),     .result(ram_result),
+  .s_clk(s_clk),       .s_cs_n(s_cs_n),
+  .s_ras_n(s_ras_n),   .s_cas_n(s_cas_n),
+  .s_we_n(s_we_n),     .s_cke(s_cke),
+  .s_dqm(s_dqm),       .s_addr(s_addr),
+  .s_bs(s_bs),         .s_dq(s_dq));
 
 logic [15:0]instr_read_delay;
 logic [15:0]data_read_delay;
 
 logic [31:0]ops[30];
 logic [31:0]shittyram[100];
+
+sdramstate_t state;
+logic [1:0]bankSelect;
+logic [12:0]rowSelect;
+logic [8:0]columnSelect;
+logic [15:0]dqSelect;
+logic [15:0]readResult;
+
 always_ff @(posedge clk) begin
   if (!rst_n) begin
 ops[0] <= 32'h00100093;
@@ -119,199 +138,5 @@ ops[9] <= 32'hfeb516e3;
     end
   end
 end
-
-/*
- * StartUp
- *
- * WaitStart, Precharge, Mode Register State
- * AutoRefresh 1-8,
- *
- */
-
-
-/*
-logic [6:0]powerupState;
-localparam logic[6:0] MAX_POWERUP_STATE = 7'd80;
-localparam logic[15:0] HI_Z = 16'hZZZZ;
-
-always_ff @(posedge clk) begin
-  if (!rst_n) begin
-    powerupState <= 7'h00;
-  end else begin
-    if (powerupState <= MAX_POWERUP_STATE) begin
-      powerupState <= powerupState + 1;
-    end
-  end
-end
-
-task automatic nop;
-  begin
-    s_cke   <= 1;
-    s_cs_n  <= 0;
-    s_ras_n <= 1;
-    s_cas_n <= 1;
-    s_we_n  <= 1;
-    s_dqm   <= 0;
-    s_bs    <= 0;
-    s_addr  <= 0;
-    dq    <= HI_Z;
-  end
-endtask
-
-task precharge_bank_0;
-  input [1 : 0] dqm_in;
-  input [15 : 0] dq_in;
-  begin
-    cke   = 1;
-    cs_n  = 0;
-    ras_n = 0;
-    cas_n = 1;
-    we_n  = 0;
-    dqm   = dqm_in;
-    ba    = 0;
-    addr  = 0;
-    dq    = dq_in;
-  end
-endtask
-
-task precharge_bank_1;
-  input [1 : 0] dqm_in;
-  input [15 : 0] dq_in;
-  begin
-    cke   = 1;
-    cs_n  = 0;
-    ras_n = 0;
-    cas_n = 1;
-    we_n  = 0;
-    dqm   = dqm_in;
-    ba    = 1;
-    addr  = 0;
-    dq    = dq_in;
-  end
-endtask
-
-task automatic precharge_banks;
-  begin
-    s_cke   <= 1;
-    s_cs_n  <= 0;
-    s_ras_n <= 0;
-    s_cas_n <= 1;
-    s_we_n  <= 0;
-    s_dqm   <= 0;
-    s_bs    <= 0;
-    s_addr  <= 1024; // A10 = 1
-    dq    <= HI_Z;
-  end
-endtask
-
-task automatic auto_refresh;
-  begin
-    s_cke   <= 1;
-    s_cs_n  <= 0;
-    s_ras_n <= 0;
-    s_cas_n <= 0;
-    s_we_n  <= 1;
-    s_dqm   <= 0;
-    s_bs    <= 0;
-    s_addr  <= 0;
-    dq    <= HI_Z;
-  end
-endtask
-
-task automatic load_mode_reg;
-  input [12 : 0] op_code;
-  begin
-    s_cke   <= 1;
-    s_cs_n  <= 0;
-    s_ras_n <= 0;
-    s_cas_n <= 0;
-    s_we_n  <= 0;
-    s_dqm   <= 0;
-    s_bs    <= 0;
-    s_addr  <= op_code;
-    dq    <= HI_Z;
-  end
-endtask
-
-
-task automatic bank_active;
-  input [ 1 : 0] bank;
-  input [12 : 0] row;
-  begin
-    s_cke   <= 1;
-    s_cs_n  <= 0;
-    s_ras_n <= 0;
-    s_cas_n <= 1;
-    s_we_n  <= 1;
-    s_dqm   <= 0;
-    s_bs    <= bank;
-    s_addr  <= row;
-    dq    <= HI_Z;
-  end
-endtask
-
-task automatic write;
-  input [ 1 : 0] bank;
-  input [ 8 : 0] column;
-  input [15 : 0] dq_in;
-  begin
-    s_cke   <= 1;
-    s_cs_n  <= 0;
-    s_ras_n <= 1;
-    s_cas_n <= 0;
-    s_we_n  <= 0;
-    s_dqm   <= 0;
-    s_bs    <= bank;
-    s_addr  <= column;
-    dq    <= dq_in;
-  end
-endtask
-
-task automatic read;
-  input [ 1 : 0] bank;
-  input [ 8 : 0] column;
-  begin
-    s_cke   <= 1;
-    s_cs_n  <= 0;
-    s_ras_n <= 1;
-    s_cas_n <= 0;
-    s_we_n  <= 1;
-    s_dqm   <= 0;
-    s_bs    <= bank;
-    s_addr  <= column;
-    dq    <= HI_Z;
-  end
-endtask
-
-always_ff @(posedge clk) begin
-  if (!rst_n) begin
-    result <= 32'h0000;
-  end else begin
-    case (powerupState)
-      'd1: nop;  //0-8 Nop
-      'd9: precharge_banks;  //9 Precharge ALL Bank
-      'd10: nop;  //10-11 Nop, tRP's minimum value is 20ns
-      'd12: auto_refresh;  //12 Auto Refresh
-      'd13: nop;  //13-20 Nop, tRFC's minimum value is 66ns
-      'd21: auto_refresh;  //21 Auto Refresh
-      'd22: nop;  //22-29 Nop, tRFC's minimum value is 66ns
-      'd30: load_mode_reg(13'b0001000100011);  //30 Load Mode: Lat = 2, BL = 8, Seq
-      'd31: nop;  //31 Nop, 2tCLK
-      'd33: bank_active(0, 0);  //33 Active: Bank = 0, Row = 0
-      'd34: nop;  //34-35 Nop
-      'd36: write(0, 200, result + 1);  //36 Write : Bank = 0, Col = 200
-      'd37: begin result <= 32'h0000; nop; end  //37 Nop
-      'd38: nop;  //38 Nop
-      'd39: nop;  //39-40 Nop
-      'd50: bank_active(0, 0);  //50 Active: Bank = 0, Row = 0
-      'd51: nop;  //51-52 Nop
-      'd53: read(0, 200);  //53 Read Bank = 0, Col = 200
-      'd54: nop;  //54 Nop
-      'd55: nop;
-      'd56: result <= {16'h00, s_dq};  //55 Nop
-      default:;
-    endcase
-  end
-end*/
 
 endmodule
