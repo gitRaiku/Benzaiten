@@ -41,16 +41,16 @@ module main(
 
   logic [31:0]alu_result;
 
-  logic [31:0]ram_instr_result;
-  logic [31:0]ram_instr_addr;
-  logic ram_instr_enable, ram_instr_valid;
-  logic ram_data_enable, ram_data_valid;
-  logic ram_data_unsigned;
-  logic [1:0]ram_data_oplen;
-  logic [24:0]ram_data_addr;
-  logic [31:0]ram_data_wdata;
-  logic [31:0]ram_data_result;
-  logic ram_data_rw;
+  logic [31:0]mem_instr_result;
+  logic [31:0]mem_instr_addr;
+  logic mem_instr_enable, mem_instr_valid;
+  logic mem_data_enable, mem_data_valid;
+  logic mem_data_unsigned;
+  logic [1:0]mem_data_oplen;
+  logic [24:0]mem_data_addr;
+  logic [31:0]mem_data_wdata;
+  logic [31:0]mem_data_result;
+  logic mem_data_we;
 
   logic [31:0]instruction;
   logic [31:0]pc;
@@ -60,18 +60,18 @@ module main(
   always_ff @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
       pc <= 32'h0000;
-      ram_instr_enable <= 1'b0;
-      ram_data_enable <= 1'b0;
+      mem_instr_enable <= 1'b0;
+      mem_data_enable <= 1'b0;
       regfile_data <= 32'h0000;
       regfile_we <= 1'b0;
       state <= CPU_FETCH;
 
-      ram_instr_addr <= 32'h00000000;
-      ram_data_addr <= 32'h00000000;
-      ram_data_rw <= 1'b0;
-      ram_data_oplen <= 1'b0;
-      ram_data_unsigned <= 1'b0;
-      ram_data_wdata <= 32'h00000000;
+      mem_instr_addr <= 32'h00000000;
+      mem_data_addr <= 32'h00000000;
+      mem_data_we <= 1'b0;
+      mem_data_oplen <= 1'b0;
+      mem_data_unsigned <= 1'b0;
+      mem_data_wdata <= 32'h00000000;
 
       instruction <= 32'h00000013;
       jumplen <= 32'h00000000;
@@ -82,34 +82,34 @@ module main(
       * Execute
       */
       regfile_we <= 1'b0;
-      ram_instr_enable <= 1'b0;
-      ram_data_enable  <= 1'b0;
+      mem_instr_enable <= 1'b0;
+      mem_data_enable  <= 1'b0;
       unique case (state)
         CPU_FETCH: begin
-          ram_instr_addr <= pc;
-          ram_instr_enable <= 1'b1;
-          if (ram_instr_valid) begin
-            ram_instr_enable <= 1'b0;
-            instruction <= ram_instr_result;
+          mem_instr_addr <= pc;
+          mem_instr_enable <= 1'b1;
+          if (mem_instr_valid) begin
+            mem_instr_enable <= 1'b0;
+            instruction <= mem_instr_result;
             state <= CPU_EX;
           end
         end
         CPU_EX: begin
           case (instr_op)
             7'b00000_11: begin // Load from ram
-              ram_data_enable <= 1'b1;
-              ram_data_addr <= alu_result;
-              ram_data_rw <= 1'b0;
-              ram_data_oplen <= instr_oplen;
-              ram_data_unsigned <= instr_func[2];
+              mem_data_enable <= 1'b1;
+              mem_data_addr <= alu_result;
+              mem_data_we <= 1'b0;
+              mem_data_oplen <= instr_oplen;
+              mem_data_unsigned <= instr_func[2];
               regfile_data <= 32'h0000;
             end
             7'b01000_11: begin // Store to ram
-              ram_data_enable <= 1'b1;
-              ram_data_addr <= alu_result;
-              ram_data_rw <= 1'b1;
-              ram_data_wdata <= regfile_res2;
-              ram_data_oplen <= instr_oplen;
+              mem_data_enable <= 1'b1;
+              mem_data_addr <= alu_result;
+              mem_data_we <= 1'b1;
+              mem_data_wdata <= regfile_res2;
+              mem_data_oplen <= instr_oplen;
               regfile_data <= 32'h0000;
             end
             7'b11001_11,7'b11011_11: begin // JAL JALR
@@ -129,11 +129,11 @@ module main(
           state <= CPU_MEM; /// TODO: Shortcircuit
         end
         CPU_MEM: begin
-          if (ram_data_enable) begin
-            ram_data_enable <= 1'b1;
-            if (ram_data_valid) begin
-              ram_data_enable <= 1'b0;
-              regfile_data <= ram_data_result;
+          if (mem_data_enable) begin
+            mem_data_enable <= 1'b1;
+            if (mem_data_valid) begin
+              mem_data_enable <= 1'b0;
+              regfile_data <= mem_data_result;
               state <= CPU_WB;
             end
           end else begin
@@ -151,16 +151,16 @@ module main(
     end
   end
 
-  sdramController sdram(
+  memoryController memcon(
     .clk(clk), .rst_n(rst_n),
 
-    .instr_addr(ram_instr_addr[24:0]),
-    .instr_result(ram_instr_result),
+    .instr_addr(mem_instr_addr[24:0]),
+    .instr_result(mem_instr_result),
 
-    .instr_enable(ram_instr_enable), .instr_valid(ram_instr_valid), .data_enable(ram_data_enable),
-    .data_valid(ram_data_valid), .data_oplen(ram_data_oplen), .data_unsigned(ram_data_unsigned),
-    .data_addr(ram_data_addr), .data_wdata(ram_data_wdata), .data_rw(ram_data_rw),
-    .data_result(ram_data_result),
+    .instr_enable(mem_instr_enable), .instr_valid(mem_instr_valid), .data_enable(mem_data_enable),
+    .data_valid(mem_data_valid), .data_oplen(mem_data_oplen), .data_unsigned(mem_data_unsigned),
+    .data_addr(mem_data_addr), .data_wdata(mem_data_wdata), .data_we(mem_data_we),
+    .data_result(mem_data_result),
 
     .s_clk(s_clk), .s_cs_n(s_cs_n),
     .s_ras_n(s_ras_n), .s_cas_n(s_cas_n),

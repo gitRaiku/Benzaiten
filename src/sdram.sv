@@ -4,7 +4,7 @@ module sdram(
   input logic clk, rst_n,
   input logic enable, output logic valid,
   input logic [24:0]addr,
-  input logic [1:0]oplen, input logic writeEnable,   /// TODO: Add input logic for non 8-bit values
+  input logic [1:0]oplen, input logic we,   /// TODO: Add input logic for non 8-bit values
   input logic [31:0]data, output logic [31:0]result, /// TODO: Currently top 8-bits for every cell
   output logic        s_clk,   output logic        s_cs_n, /// Get discarded
   output logic        s_ras_n, output logic        s_cas_n,

@@ -4,7 +4,7 @@ module internalRam(
   input logic clk, rst_n,
   input logic enable, output logic valid,
   input logic [24:0]addr,
-  input logic [1:0]oplen, input logic writeEnable,   /// TODO: Add input logic for non 8-bit values
+  input logic [1:0]oplen, input logic we,   /// TODO: Add input logic for non 8-bit values
   input logic [31:0]data, output logic [31:0]result /// TODO: Currently top 8-bits for every cell
   );
 
@@ -19,19 +19,20 @@ module internalRam(
       {ram[23], ram[22], ram[21], ram[20]} <= 32'h002081b3;
       {ram[27], ram[26], ram[25], ram[24]} <= 32'h00010093;
       {ram[31], ram[30], ram[29], ram[28]} <= 32'h00018113;
-      {ram[35], ram[34], ram[33], ram[32]} <= 32'h00152023;
+      {ram[35], ram[34], ram[33], ram[32]} <= 32'h04152023;
       {ram[39], ram[38], ram[37], ram[36]} <= 32'hfeb516e3;
+      {ram[ 3], ram[ 2], ram[ 1], ram[ 0]} <= 32'h00100093;
       valid <= 0;
       result <= 0;
     end else begin
       valid <= 0;
       if (enable) begin
-        if (writeEnable) begin
+        if (we) begin
           unique case (oplen)
-            2'b00: ram[addr + 0] <= data[7:0];
-            2'b01: ram[addr + 1] <= data[15:0];
-            2'b10: ram[addr + 2] <= data[23:0];
-            2'b11: ram[addr + 3] <= data[31:0];
+            2'b00: {ram[addr + 0]                                             } <= data[ 7:0];
+            2'b01: {ram[addr + 1], ram[addr + 0]                              } <= data[15:0];
+            2'b10: {ram[addr + 2], ram[addr + 1], ram[addr + 0]               } <= data[23:0];
+            2'b11: {ram[addr + 3], ram[addr + 2], ram[addr + 1], ram[addr + 0]} <= data[31:0];
           endcase
         end else begin
           unique case (oplen)
