@@ -21,11 +21,12 @@ int main(int argc, char **argv) {
     readl = read(fd, cres, sizeof(cres));
     int32_t i;
     for(i = 0; i < readl / 4; ++i) {
-      fprintf(stdout, "ops[%u] <= 32'h%08x;\n", ci++, 
+      fprintf(stdout, "      {ram[%2u], ram[%2u], ram[%2u], ram[%2u]} <= 32'h%08x;\n", ci + 3, ci + 2, ci + 1, ci, 
           (uint32_t)(cres[i * 4 + 0] << 0) + 
           (uint32_t)(cres[i * 4 + 1] << 8) + 
           (uint32_t)(cres[i * 4 + 2] <<16) + 
           (uint32_t)(cres[i * 4 + 3] <<24));
+      ci += 4;
     }
   } while (readl == sizeof(cres));
   

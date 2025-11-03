@@ -51,14 +51,15 @@ sextender_m sextender(
   .in(internal_data_result), .usgn(data_unsigned),
   .len(data_oplen), .out(data_result));
 
-logic ram_enable, ram_valid;
+logic ram_enable, ram_valid, ram_oplen;
 logic [24:0]ram_addr, ram_writeEnable;
 logic [31:0]ram_data;
 logic [31:0]ram_result;
 sdram ram(
   .clk(clk),           .rst_n(rst_n),
   .enable(ram_enable), .valid(ram_valid),
-  .addr(ram_addr),     .writeEnable(ram_writeEnable),
+  .addr(ram_addr),
+  .oplen(ram_oplen),   .writeEnable(ram_writeEnable),
   .data(ram_data),     .result(ram_result),
   .s_clk(s_clk),       .s_cs_n(s_cs_n),
   .s_ras_n(s_ras_n),   .s_cas_n(s_cas_n),
@@ -66,75 +67,38 @@ sdram ram(
   .s_dqm(s_dqm),       .s_addr(s_addr),
   .s_bs(s_bs),         .s_dq(s_dq));
 
-logic [15:0]instr_read_delay;
-logic [15:0]data_read_delay;
+logic iram_enable, iram_valid;
+logic [24:0]iram_addr;
+logic [ 1:0]iram_oplen, iram_writeEnable;
+logic [31:0]iram_data;
+logic [31:0]iram_result;
+internalRam iram(
+  .clk(clk), .rst_n(rst_n),
+  .enable(iram_enable), .valid(iram_valid),
+  .addr(iram_addr), .oplen(iram_oplen), .writeEnable(iram_writeEnable),
+  .data(iram_data), .result(iram_result));
 
-logic [31:0]ops[30];
-logic [31:0]shittyram[100];
-
-sdramstate_t state;
-logic [1:0]bankSelect;
-logic [12:0]rowSelect;
-logic [8:0]columnSelect;
-logic [15:0]dqSelect;
-logic [15:0]readResult;
+logic [1:0]instr_source;
+assign instr_valid = (instr_source == 0) ? iram_valid : ram_valid;
+assign instr_result = (instr_source == 0) ? iram_result : ram_result;
+logic [1:0]data_source;
+assign data_valid = (data_source == 0) ? iram_valid : ram_valid;
+assign data_result = (data_source == 0) ? iram_result : ram_result;
 
 always_ff @(posedge clk) begin
   if (!rst_n) begin
-ops[0] <= 32'h00100093;
-ops[1] <= 32'h00100113;
-ops[2] <= 32'h00000513;
-ops[3] <= 32'h02000593;
-ops[4] <= 32'h00450513;
-ops[5] <= 32'h002081b3;
-ops[6] <= 32'h00010093;
-ops[7] <= 32'h00018113;
-ops[8] <= 32'h00152023;
-ops[9] <= 32'hfeb516e3;
-
-    instr_valid <= 1'b0;
-    instr_read_delay <= 16'h00;
-    data_valid <= 1'b0;
-    data_read_delay <= 16'h00;
+    instr_valid <= 0;
+    data_valid <= 0;
   end else begin
-    // TODO: Handle non aligned reads
-    data_valid <= 1'b0;
-    instr_valid <= 1'b0;
-    if (data_enable && !data_valid && data_read_delay == 16'h00) begin
-      if (data_rw) begin
-        unique case (data_oplen)
-          2'b00: shittyram[data_addr >> 2][7:0] <= data_wdata[7:0];
-          2'b01: shittyram[data_addr >> 2][15:0] <= data_wdata[15:0];
-          2'b10: shittyram[data_addr >> 2][23:0] <= data_wdata[23:0];
-          2'b11: shittyram[data_addr >> 2][31:0] <= data_wdata[31:0];
-        endcase
-      end else begin
-        unique case (data_oplen)
-          2'b00:internal_data_result <= {24'h0000, shittyram[data_addr >> 2][7:0]};
-          2'b01:internal_data_result <= {16'h0000, shittyram[data_addr >> 2][15:0]};
-          2'b10:internal_data_result <= {8'h0000, shittyram[data_addr >> 2][23:0]};
-          2'b11:internal_data_result <= {shittyram[data_addr >> 2][31:0]};
-        endcase
-      end
-      data_read_delay <= 8;
-    end else if (data_read_delay > 0) begin
-      data_valid <= 1'b0;
-      data_read_delay <= data_read_delay - 1;
-      if (data_read_delay == 1) begin
-        data_valid <= 1'b1;
-        if (instr_enable) begin instr_valid <= 1'b0; end
-      end
-    end else if (instr_enable && !instr_valid && instr_read_delay == 16'h00) begin
-      if ((instr_addr >> 2) > 18) begin $stop(); end
-      instr_result <= {ops[instr_addr >> 2][31:0]};
-      instr_read_delay <= 8;
-      instr_valid <= 1'b0;
-    end else if (instr_read_delay > 0) begin
-      instr_valid <= 1'b0;
-      instr_read_delay <= instr_read_delay - 1;
-      if (instr_read_delay == 1) begin
-        instr_valid <= 1'b1;
-      end
+    instr_valid <= 0;
+    data_valid <= 0;
+    if (instr_enable && !instr_valid) begin
+      iram_enable <= 1;
+      iram_addr <= instr_addr;
+      iram_oplen <= 3;
+      instr_source <= 0;
+    end else if (instr_enable && instr_valid) begin
+      iram_enable <= 0;
     end
   end
 end

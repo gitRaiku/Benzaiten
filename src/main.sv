@@ -56,9 +56,6 @@ module main(
   logic [31:0]pc;
   logic [31:0]jumplen;
 
-  logic bus_stall;
-  assign bus_stall = (ram_instr_enable && !ram_instr_valid) || (ram_data_enable && !ram_data_valid);
-
   cpustage_t state;
   always_ff @(negedge rst_n or posedge clk) begin
     if (!rst_n) begin
