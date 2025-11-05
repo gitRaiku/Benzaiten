@@ -5,13 +5,10 @@ module testbench();
 
   main pula(
   .clk_50_in(clk),
-  .rst_n(rst_n));
+  .rst_n_in(1'b1));
 
   initial begin
     clk <= 0;
-    rst_n <= 0;
-    #5;
-    rst_n <= 1;
   end
 
   always begin

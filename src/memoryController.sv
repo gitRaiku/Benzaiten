@@ -20,7 +20,8 @@ module memoryController(
   output logic        s_ras_n, output logic        s_cas_n,
   output logic        s_we_n,  output logic        s_cke,
   output logic [1:0]  s_dqm,   output logic [12:0] s_addr,
-  output logic [1:0]  s_bs,    inout  logic [15:0] s_dq
+  output logic [1:0]  s_bs,    inout  logic [15:0] s_dq,
+  output logic [15:0] gpio
 );
 
 module sextender_m(input logic [31:0]in, input logic usgn,
@@ -44,15 +45,14 @@ module sextender_m(input logic [31:0]in, input logic usgn,
   end
 endmodule
 
-assign s_clk = clk;
-
 logic [31:0]internal_data_result;
 sextender_m sextender(
   .in(internal_data_result), .usgn(data_unsigned),
   .len(data_oplen), .out(data_result));
 
-logic ram_enable, ram_valid, ram_oplen;
-logic [24:0]ram_addr, ram_we;
+logic ram_enable, ram_valid, ram_we;
+logic [1:0]ram_oplen;
+logic [24:0]ram_addr;
 logic [31:0]ram_data;
 logic [31:0]ram_result;
 sdram ram(
@@ -67,23 +67,24 @@ sdram ram(
   .s_dqm(s_dqm),       .s_addr(s_addr),
   .s_bs(s_bs),         .s_dq(s_dq));
 
-logic iram_enable, iram_valid;
+localparam logic [7:0]IMEM_LEN = 54;
+logic iram_enable, iram_valid, iram_we;
 logic [24:0]iram_addr;
-logic [ 1:0]iram_oplen, iram_we;
+logic [ 1:0]iram_oplen;
 logic [31:0]iram_data;
 logic [31:0]iram_result;
-internalRam iram(
+internalRam #(.MEM_LEN(IMEM_LEN)) iram(
   .clk(clk), .rst_n(rst_n),
   .enable(iram_enable), .valid(iram_valid),
   .addr(iram_addr), .oplen(iram_oplen), .we(iram_we),
-  .data(iram_data), .result(iram_result));
+  .data(iram_data), .result(iram_result), .gpio(gpio));
 
 logic [1:0]instr_source;
 assign instr_valid = (instr_source == 0) ? iram_valid : ram_valid;
 assign instr_result = (instr_source == 0) ? iram_result : ram_result;
 logic [1:0]data_source;
 assign data_valid = (data_source == 0) ? iram_valid : ram_valid;
-assign data_result = (data_source == 0) ? iram_result : ram_result;
+assign internal_data_result = (data_source == 0) ? iram_result : ram_result;
 
 /// TODO: Learn secrets of hyperborea and write this code better
 task automatic reset_values;
@@ -111,7 +112,7 @@ always_ff @(posedge clk) begin
       iram_oplen <= 3;
       instr_source <= 0;
     end else if (data_enable && !data_valid) begin
-      if (data_addr < 512) begin
+      if (data_addr < IMEM_LEN) begin
         iram_enable <= 1;
         iram_addr <= data_addr;
         iram_we <= data_we;
@@ -120,7 +121,7 @@ always_ff @(posedge clk) begin
         data_source <= 0;
       end else begin
         ram_enable <= 1;
-        ram_addr <= data_addr - 512;
+        ram_addr <= data_addr - IMEM_LEN;
         ram_we <= data_we;
         ram_data <= data_wdata;
         ram_oplen <= data_oplen;

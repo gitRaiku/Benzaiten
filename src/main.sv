@@ -3,27 +3,36 @@ import defs::*;
 
 // inout io_sd_dat0, io_sd_dat1, io_sd_dat2, io_sd_dat3, io_sd_cmd, io_sd_clk,
 module main(
-  input logic clk_50_in, rst_n, button_1_n,
-  output led_1_n, led_2_n,
+  input logic clk_50_in, rst_n_in, button_1_n,
+  output logic led_1_n, led_2_n,
 
-  output s_clk, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_cke,
-  output [1:0]s_dqm,
-  output [1:0]s_bs,
-  output [12:0]s_addr,
-  inout  [15:0]s_dq
+  output logic s_clk, s_cs_n, s_ras_n, s_cas_n, s_we_n, s_cke,
+  output logic [1:0]s_dqm, output logic [12:0]s_addr,
+  output logic [1:0]s_bs,  inout logic [15:0]s_dq,
+
+  output [15:0]gpio
   );
 
+  wire rst_n_internal;
+  SRL16 #(.INIT(16'h0000)) srl_rst(
+    .Q(rst_n_internal),
+    .A0(1'b1), .A1(1'b1),
+    .A2(1'b1), .A3(1'b1),
+    .CLK(clk_50_in), .D(1'b1)
+  );
+  wire rst_n;
+  assign rst_n = 1'b1 & rst_n_in & rst_n_internal;
   /*
   logic clk_locked;
   logic clk_10, clk_50, clk_100;
   clk_wiz_1 clankka(.clk_out1(clk_50), .clk_out2(clk_100), .clk_out3(clk_10), .locked(clk_locked),
                     .resetn(rst_n), .clk_in1(clk_50_in));
   */
+  wire clk;
   assign clk = clk_50_in;
-  assign clk_out = clk;
 
-  assign led_2_n = 1;
-  assign led_1_n = button_1_n;
+  assign led_2_n = !gpio[0];
+  assign led_1_n = !gpio[1];
 
   logic [6:0]instr_op;
   logic [9:0]instr_func;
@@ -166,7 +175,9 @@ module main(
     .s_ras_n(s_ras_n), .s_cas_n(s_cas_n),
     .s_we_n(s_we_n), .s_cke(s_cke),
     .s_dqm(s_dqm), .s_addr(s_addr),
-    .s_bs(s_bs), .s_dq(s_dq)
+    .s_bs(s_bs), .s_dq(s_dq),
+
+    .gpio(gpio)
     );
 
   instructionDecoder idec(.instr(instruction), .op(instr_op),
