@@ -14,5 +14,5 @@ fi
 rv32-objcopy -O binary $1.o $1.bin
 rm $1.o
 
-./printram $1.bin
+./printram $1.bin > ram.bin
 rm $1.bin

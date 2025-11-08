@@ -20,6 +20,10 @@ int main(int argc, char **argv) {
   do {
     readl = read(fd, cres, sizeof(cres));
     int32_t i;
+    for(i = 0; i < readl; ++i) {
+      fprintf(stdout, "%02X\n", cres[i]);
+    }
+    /*
     for(i = 0; i < readl / 4; ++i) {
       fprintf(stdout, "      {ram[%2u], ram[%2u], ram[%2u], ram[%2u]} <= 32'h%08x;\n", ci + 3, ci + 2, ci + 1, ci, 
           (uint32_t)(cres[i * 4 + 0] << 0) + 
@@ -27,7 +31,7 @@ int main(int argc, char **argv) {
           (uint32_t)(cres[i * 4 + 2] <<16) + 
           (uint32_t)(cres[i * 4 + 3] <<24));
       ci += 4;
-    }
+    }*/
   } while (readl == sizeof(cres));
   
   return 0;

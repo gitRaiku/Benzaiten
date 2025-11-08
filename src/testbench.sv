@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module testbench();
-  logic clk, rst_n;
+  logic clk;
 
   main pula(
   .clk_50_in(clk),

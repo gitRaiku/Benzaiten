@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module sdram(
-  input logic clk, rst_n,
+  input logic clk, rst,
   input logic enable, output logic valid,
   input logic [24:0]addr,
   input logic [1:0]oplen, input logic we,   /// TODO: Add input logic for non 8-bit values
@@ -62,7 +62,7 @@ logic targetUL;
 assign targetUL = addr[0];
 
 always_ff @(posedge clk) begin
-  if (!rst_n) begin
+  if (rst) begin
     macrostate <= RAM_M_NEVER_INIT;
     mstatefc <= 0;
     valid <= 0;
@@ -174,7 +174,6 @@ always_ff @(posedge clk) begin
     ff_timeout(2);
     ff_timeout(3);
   end
-
 end
 
 
@@ -243,7 +242,7 @@ endtask
 logic goToTargetState;
 task automatic enter_wait; begin state <= RAM_WAIT; returnToWait <= 1; curState <= 0; end endtask
 always_ff @(posedge clk) begin
-  if (!rst_n) begin
+  if (rst) begin
     state <= RAM_INIT;
     curState <= 7'h00;
     readResult <= 16'h0000;

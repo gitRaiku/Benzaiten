@@ -13,23 +13,25 @@ module main(
   output [15:0]gpio
   );
 
-  wire rst_n_internal;
-  SRL16 #(.INIT(16'h0000)) srl_rst(
-    .Q(rst_n_internal),
+  wire clk;
+  assign clk = clk_50_in;
+
+  wire rst_internal;
+  SRL16 #(.INIT(16'h1111)) srl_rst(
+    .Q(rst_internal),
     .A0(1'b1), .A1(1'b1),
     .A2(1'b1), .A3(1'b1),
-    .CLK(clk_50_in), .D(1'b1)
+    .CLK(clk), .D(1'b0)
   );
-  wire rst_n;
-  assign rst_n = 1'b1 & rst_n_in & rst_n_internal;
+
+  wire rst;
+  assign rst = !rst_n_in || rst_internal;
   /*
   logic clk_locked;
   logic clk_10, clk_50, clk_100;
   clk_wiz_1 clankka(.clk_out1(clk_50), .clk_out2(clk_100), .clk_out3(clk_10), .locked(clk_locked),
-                    .resetn(rst_n), .clk_in1(clk_50_in));
+                    .resetn(rst), .clk_in1(clk_50_in));
   */
-  wire clk;
-  assign clk = clk_50_in;
 
   assign led_2_n = !gpio[0];
   assign led_1_n = !gpio[1];
@@ -56,7 +58,7 @@ module main(
   logic mem_data_enable, mem_data_valid;
   logic mem_data_unsigned;
   logic [1:0]mem_data_oplen;
-  logic [24:0]mem_data_addr;
+  logic [31:0]mem_data_addr;
   logic [31:0]mem_data_wdata;
   logic [31:0]mem_data_result;
   logic mem_data_we;
@@ -66,8 +68,8 @@ module main(
   logic [31:0]jumplen;
 
   cpustage_t state;
-  always_ff @(negedge rst_n or posedge clk) begin
-    if (!rst_n) begin
+  always_ff @(posedge clk) begin
+    if (rst) begin
       pc <= 32'h0000;
       mem_instr_enable <= 1'b0;
       mem_data_enable <= 1'b0;
@@ -161,9 +163,9 @@ module main(
   end
 
   memoryController memcon(
-    .clk(clk), .rst_n(rst_n),
+    .clk(clk), .rst(rst),
 
-    .instr_addr(mem_instr_addr[24:0]),
+    .instr_addr(mem_instr_addr),
     .instr_result(mem_instr_result),
 
     .instr_enable(mem_instr_enable), .instr_valid(mem_instr_valid), .data_enable(mem_data_enable),
@@ -187,7 +189,7 @@ module main(
                           .instrType(instr_type)
   );
 
-  regfile rf(.clk(clk), .rst_n(rst_n), .write_enabled(regfile_we),
+  regfile rf(.clk(clk), .rst(rst), .write_enabled(regfile_we),
              .rs1(instr_rs1), .rs2(instr_rs2), .rd(instr_rd),
              .data(regfile_data), .res1(regfile_res1), .res2(regfile_res2));
 

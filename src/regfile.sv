@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module regfile(
-  input logic clk, rst_n,
+  input logic clk, rst,
   input logic write_enabled,
   input logic [4:0]rs1,
   input logic [4:0]rs2,
@@ -11,20 +11,17 @@ module regfile(
   output logic [31:0]res2
   );
 
-  logic [31:0]memory[32];
-  always_comb begin
-    res1 = memory[rs1];
-    res2 = memory[rs2];
-  end
+  /// TODO: See if you can use a better primitive than registers for this
+  (* ram_style = "distributed" *) logic [31:0]memory1[32];
+  (* ram_style = "distributed" *) logic [31:0]memory2[32];
+  assign res1 = memory1[rs1];
+  assign res2 = memory2[rs2];
 
   always @(posedge clk) begin
-    if (!rst_n) begin
-      int i;
-      for (i = 0; i < 32; i = i + 1) begin
-        memory[i] <= 32'h0000;
-      end
+    if (rst) begin
     end else if (write_enabled && rd != 0) begin
-      memory[rd] <= data;
+      memory1[rd] <= data;
+      memory2[rd] <= data;
     end
   end
 
