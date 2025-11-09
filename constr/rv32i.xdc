@@ -14,16 +14,16 @@ set_property PACKAGE_PIN R2 [get_ports clk_50_in]
 
 # set_property PACKAGE_PIN V2 [get_ports clk_out]
 # set_property IOSTANDARD LVCMOS33 [get_ports clk_out]
-# 
+#
 # set_property PACKAGE_PIN T3 [get_ports rst_n_out]
 # set_property IOSTANDARD LVCMOS33 [get_ports rst_n_out]
-# 
+#
 # set_property PACKAGE_PIN P3 [get_ports led_1_n_out]
 # set_property IOSTANDARD LVCMOS33 [get_ports led_1_n_out]
-# 
+#
 # set_property PACKAGE_PIN L4 [get_ports clk_out_true]
 # set_property IOSTANDARD LVCMOS33 [get_ports clk_out_true]
-# 
+#
 set_property PACKAGE_PIN P16 [get_ports s_clk]
 set_property PACKAGE_PIN R16 [get_ports s_cke]
 
@@ -106,16 +106,19 @@ set_property IOSTANDARD LVCMOS33 [get_ports {gpio[*]}]
 
 create_clock -period 20.000 [get_ports clk_50_in]
 set_input_jitter [get_clocks -of_objects [get_ports clk_50_in]] 0.200
+# set_false_path -from [get_clocks clk_50_in] -to [get_clocks s_clk]
+#
+# set_output_delay -max 1.5 -clock [get_clocks clk_50_in] [get_ports led_*]
+# set_output_delay -min -0.8 -clock [get_clocks clk_50_in] [get_ports led_*]
+# set_output_delay -max 1.5 -clock [get_clocks clk_50_in] [get_ports s_*]
+# set_output_delay -min -0.8 -clock [get_clocks clk_50_in] [get_ports s_*]
+# set_output_delay -max 1.5 -clock [get_clocks clk_50_in] [get_ports gpio[*]]
+# set_output_delay -min -0.8 -clock [get_clocks clk_50_in] [get_ports gpio[*]]
+# set_input_delay -max 5.0 -clock [get_clocks clk_50_in] [get_ports rst_n_in]
+# set_input_delay -min 2.5 -clock [get_clocks clk_50_in] [get_ports rst_n_in]
+# set_input_delay -max 5.0 -clock [get_clocks clk_50_in] [get_ports button_1_n]
+# set_input_delay -min 2.5 -clock [get_clocks clk_50_in] [get_ports button_1_n]
+# set_input_delay -max 5.0 -clock [get_clocks clk_50_in] [get_ports s_dq[*]]
+# set_input_delay -min 2.5 -clock [get_clocks clk_50_in] [get_ports s_dq[*]]
 
-set_output_delay -max 1.5 -clock [get_clocks clk_50_in] [get_ports led_*]
-set_output_delay -min -0.8 -clock [get_clocks clk_50_in] [get_ports led_*]
-set_output_delay -max 1.5 -clock [get_clocks clk_50_in] [get_ports s_*]
-set_output_delay -min -0.8 -clock [get_clocks clk_50_in] [get_ports s_*]
-set_output_delay -max 1.5 -clock [get_clocks clk_50_in] [get_ports gpio[*]]
-set_output_delay -min -0.8 -clock [get_clocks clk_50_in] [get_ports gpio[*]]
-set_input_delay -max 5.0 -clock [get_clocks clk_50_in] [get_ports rst_n_in]
-set_input_delay -min 2.5 -clock [get_clocks clk_50_in] [get_ports rst_n_in]
-set_input_delay -max 5.0 -clock [get_clocks clk_50_in] [get_ports button_1_n]
-set_input_delay -min 2.5 -clock [get_clocks clk_50_in] [get_ports button_1_n]
-set_input_delay -max 5.0 -clock [get_clocks clk_50_in] [get_ports s_dq[*]]
-set_input_delay -min 2.5 -clock [get_clocks clk_50_in] [get_ports s_dq[*]]
+

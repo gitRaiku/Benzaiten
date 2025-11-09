@@ -20,8 +20,12 @@ int main(int argc, char **argv) {
   do {
     readl = read(fd, cres, sizeof(cres));
     int32_t i;
-    for(i = 0; i < readl; ++i) {
-      fprintf(stdout, "%02X\n", cres[i]);
+    for(i = 0; i < readl / 4; ++i) {
+      fprintf(stdout, "%08X\n", 
+          (uint32_t)(cres[i * 4 + 0] << 0) + 
+          (uint32_t)(cres[i * 4 + 1] << 8) + 
+          (uint32_t)(cres[i * 4 + 2] <<16) + 
+          (uint32_t)(cres[i * 4 + 3] <<24));
     }
     /*
     for(i = 0; i < readl / 4; ++i) {

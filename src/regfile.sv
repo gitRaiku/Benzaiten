@@ -17,11 +17,20 @@ module regfile(
   assign res1 = memory1[rs1];
   assign res2 = memory2[rs2];
 
+  logic [7:0]cpos;
+
   always @(posedge clk) begin
     if (rst) begin
-    end else if (write_enabled && rd != 0) begin
-      memory1[rd] <= data;
-      memory2[rd] <= data;
+      cpos <= 0;
+    end else begin
+      if (cpos != 32) begin
+        memory1[cpos] <= 32'h00000000;
+        memory2[cpos] <= 32'h00000000;
+        cpos <= cpos + 1;
+      end else if (write_enabled && rd != 0) begin
+        memory1[rd] <= data;
+        memory2[rd] <= data;
+      end
     end
   end
 

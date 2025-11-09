@@ -33,8 +33,8 @@ module main(
                     .resetn(rst), .clk_in1(clk_50_in));
   */
 
-  assign led_2_n = !gpio[0];
-  assign led_1_n = !gpio[1];
+  assign led_2_n = !gpio[12];
+  assign led_1_n = !gpio[15];
 
   logic [6:0]instr_op;
   logic [9:0]instr_func;
@@ -66,6 +66,7 @@ module main(
   logic [31:0]instruction;
   logic [31:0]pc;
   logic [31:0]jumplen;
+  logic [7:0]init_wait;
 
   cpustage_t state;
   always_ff @(posedge clk) begin
@@ -75,7 +76,7 @@ module main(
       mem_data_enable <= 1'b0;
       regfile_data <= 32'h0000;
       regfile_we <= 1'b0;
-      state <= CPU_FETCH;
+      state <= CPU_NEVER_INITED;
 
       mem_instr_addr <= 32'h00000000;
       mem_data_addr <= 32'h00000000;
@@ -83,6 +84,7 @@ module main(
       mem_data_oplen <= 1'b0;
       mem_data_unsigned <= 1'b0;
       mem_data_wdata <= 32'h00000000;
+      init_wait <= 8'h00;
 
       instruction <= 32'h00000013;
       jumplen <= 32'h00000000;
@@ -96,6 +98,12 @@ module main(
       mem_instr_enable <= 1'b0;
       mem_data_enable  <= 1'b0;
       unique case (state)
+        CPU_NEVER_INITED: begin
+          if (init_wait == 8'h20) begin
+            state <= CPU_FETCH;
+          end
+          init_wait <= init_wait + 1;
+        end
         CPU_FETCH: begin
           mem_instr_addr <= pc;
           mem_instr_enable <= 1'b1;

@@ -1,18 +1,27 @@
 #!/bin/bash
 
-if [ "$#" != "1" ]; then
+if [ -z $COMPC ]; then
+ if [ "$#" != "1" ]; then
   echo "Usage ./compile <input.s>"
   exit 1
-fi
+ fi
 
-rv32-as --march=rv32i $1 -o $1.o
+ rv32-as --march=rv32i $1 -o $1.o
 
-if [ "$?" != "0" ]; then
+ if [ "$?" != "0" ]; then
   exit 1
+ fi
+
+ rv32-objcopy -O binary $1.o $1.bin
+
+ rm $1.o
+
+ ./printram $1.bin > ram.mem
+ # rm $1.bin
+else
+ CDIR="$PWD"
+ cd /home/raiku/Git/riscv-gnu-toolchain/prefix/
+ ./bin/riscv32-unknown-elf-gcc -Wno-int-conversion -o $CDIR/out $CDIR/$@
+ rv32-objcopy -O binary $CDIR/out $CDIR/$1.bin
 fi
 
-rv32-objcopy -O binary $1.o $1.bin
-rm $1.o
-
-./printram $1.bin > ram.bin
-rm $1.bin

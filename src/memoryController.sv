@@ -66,14 +66,13 @@ sdram ram(
   .s_dqm(s_dqm),       .s_addr(s_addr),
   .s_bs(s_bs),         .s_dq(s_dq));
 
-localparam logic [7:0]IMEM_LEN = 54;
 localparam logic [7:0]IMEM_CUTOFF = 8'hFF;
 logic iram_enable, iram_valid, iram_we;
 logic [31:0]iram_addr;
 logic [ 1:0]iram_oplen;
 logic [31:0]iram_data;
 logic [31:0]iram_result;
-internalRam #(.MEM_LEN(IMEM_LEN)) iram(
+internalRam iram(
   .clk(clk), .rst(rst),
   .enable(iram_enable), .valid(iram_valid),
   .addr(iram_addr), .oplen(iram_oplen), .we(iram_we),

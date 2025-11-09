@@ -3,5 +3,5 @@ package defs;
 typedef enum { INS_R, INS_I, INS_S, INS_B, INS_U, INS_J, INS_INVALID } instype_t;
 typedef enum { ALU_ADD, ALU_SUB, ALU_AND, ALU_OR, ALU_XOR, ALU_EQN, ALU_LT, ALU_LTU, ALU_GT,
                ALU_GTU, ALU_SLL, ALU_SLR, ALU_SAR, ALU_INVALID } aluop_t;
-typedef enum { CPU_FETCH, CPU_DECODE, CPU_EX, CPU_MEM, CPU_WB } cpustage_t;
+typedef enum { CPU_NEVER_INITED, CPU_FETCH, CPU_DECODE, CPU_EX, CPU_MEM, CPU_WB } cpustage_t;
 endpackage

@@ -1,39 +1,40 @@
-.set IMEM_LEN, 54
+# Laur the BEST
+.SET gpio_addr, -1
+.SET ram_addr, 0xFF
+
 
 addi x1, x0, 0x1
-addi x2, x0, 0x1
-addi x10, x0, 0x0
-addi x11, x0, IMEM_LEN
-addi x20, x0, 0x20
-
-addi x2, x0, 0x1
 addi x6, x0, 0x0
+addi x10, x0, gpio_addr
+addi x11, x0, ram_addr
 
 start:
 
-# addi x10, x10, 0x2
+# add x2, x1, x1
+# add x1, x1, x2
+# mv x2, x1
+# srli x2, x2, 0x3
+# xor x1, x1, x2
 
-add x3, x1, x2
-mv x1, x2
-mv x2, x3
+addi x1, x1, 1
+sw x1, 10(x11)
+lw x4, 10(x11)
 
-addi x6, x6, 1
-sw x6, IMEM_LEN - 1(x0)
+sw x4, 0(x10)
 
-bne x10, x11, start
-
+j start
 
 
 
-# Laur the best
-# addi x1, x0, 0x1
-# addi x2, x0, 0x1
-# addi x10, x0, 0x0
-# addi x11, x0, 0x20
-# start:
-# addi x10, x10, 0x4
-# add x3, x1, x2
-# addi x1, x2, 0x0
-# addi x2, x3, 0x0
-# sw x1, 600(x10)
-# bne x10, x11, start
+
+# ADDI X1, X0, 0X1
+# ADDI X2, X0, 0X1
+# ADDI X10, X0, 0X0
+# ADDI X11, X0, 0X20
+# START:
+# ADDI X10, X10, 0X4
+# ADD X3, X1, X2
+# ADDI X1, X2, 0X0
+# ADDI X2, X3, 0X0
+# SW X1, 600(X10)
+# BNE X10, X11, start

@@ -1,0 +1,38 @@
+create_debug_core u_ila_0 ila
+set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
+set_property ALL_PROBE_SAME_MU_CNT 1 [get_debug_cores u_ila_0]
+set_property C_ADV_TRIGGER false [get_debug_cores u_ila_0]
+set_property C_DATA_DEPTH 1024 [get_debug_cores u_ila_0]
+set_property C_EN_STRG_QUAL false [get_debug_cores u_ila_0]
+set_property C_INPUT_PIPE_STAGES 0 [get_debug_cores u_ila_0]
+set_property C_TRIGIN_EN false [get_debug_cores u_ila_0]
+set_property C_TRIGOUT_EN false [get_debug_cores u_ila_0]
+set_property port_width 1 [get_debug_ports u_ila_0/clk]
+connect_debug_port u_ila_0/clk [get_nets [list s_clk_OBUF_BUFG]]
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe0]
+set_property port_width 16 [get_debug_ports u_ila_0/probe0]
+connect_debug_port u_ila_0/probe0 [get_nets [list {s_dq_OBUF[0]} {s_dq_OBUF[1]} {s_dq_OBUF[2]} {s_dq_OBUF[3]} {s_dq_OBUF[4]} {s_dq_OBUF[5]} {s_dq_OBUF[6]} {s_dq_OBUF[7]} {s_dq_OBUF[8]} {s_dq_OBUF[9]} {s_dq_OBUF[10]} {s_dq_OBUF[11]} {s_dq_OBUF[12]} {s_dq_OBUF[13]} {s_dq_OBUF[14]} {s_dq_OBUF[15]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe1]
+set_property port_width 16 [get_debug_ports u_ila_0/probe1]
+connect_debug_port u_ila_0/probe1 [get_nets [list {s_dq_IBUF[0]} {s_dq_IBUF[1]} {s_dq_IBUF[2]} {s_dq_IBUF[3]} {s_dq_IBUF[4]} {s_dq_IBUF[5]} {s_dq_IBUF[6]} {s_dq_IBUF[7]} {s_dq_IBUF[8]} {s_dq_IBUF[9]} {s_dq_IBUF[10]} {s_dq_IBUF[11]} {s_dq_IBUF[12]} {s_dq_IBUF[13]} {s_dq_IBUF[14]} {s_dq_IBUF[15]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe2]
+set_property port_width 16 [get_debug_ports u_ila_0/probe2]
+connect_debug_port u_ila_0/probe2 [get_nets [list {gpio_OBUF[0]} {gpio_OBUF[1]} {gpio_OBUF[2]} {gpio_OBUF[3]} {gpio_OBUF[4]} {gpio_OBUF[5]} {gpio_OBUF[6]} {gpio_OBUF[7]} {gpio_OBUF[8]} {gpio_OBUF[9]} {gpio_OBUF[10]} {gpio_OBUF[11]} {gpio_OBUF[12]} {gpio_OBUF[13]} {gpio_OBUF[14]} {gpio_OBUF[15]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe3]
+set_property port_width 3 [get_debug_ports u_ila_0/probe3]
+connect_debug_port u_ila_0/probe3 [get_nets [list {memcon/ram/state[0]} {memcon/ram/state[1]} {memcon/ram/state[2]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe4]
+set_property port_width 5 [get_debug_ports u_ila_0/probe4]
+connect_debug_port u_ila_0/probe4 [get_nets [list {memcon/ram/macrostate__0[0]} {memcon/ram/macrostate__0[1]} {memcon/ram/macrostate__0[2]} {memcon/ram/macrostate__0[3]} {memcon/ram/macrostate__0[4]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe5]
+set_property port_width 1 [get_debug_ports u_ila_0/probe5]
+connect_debug_port u_ila_0/probe5 [get_nets [list {s_dq_TRI[0]}]]
+set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
+set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
+set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
+connect_debug_port dbg_hub/clk [get_nets s_clk_OBUF_BUFG]
