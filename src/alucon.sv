@@ -38,7 +38,7 @@ module alucon(
         end else begin
           op1 = 32'h0000;
         end
-        op2 = imm << 12;
+        op2 = imm;
       end
       INS_J: begin
         op1 = 32'h0000;

@@ -37,9 +37,9 @@ logic mstatefc; /// Macro state first command
 
 localparam logic[15:0] BANK_ACTIVE_TIME = 4500; // Could be 5000 but meh
 
-(* MARK_DEBUG = "TRUE" *) logic activeBank[4];
-(* MARK_DEBUG = "TRUE" *) logic [12:0]activeRow[4];
-(* MARK_DEBUG = "TRUE" *) logic [15:0]activeBankTimeout[4];
+logic activeBank[4];
+logic [12:0]activeRow[4];
+logic [15:0]activeBankTimeout[4];
 
 task automatic ff_timeout; input [1:0]bank;
   if (activeBank[bank] && activeBankTimeout[bank] > 0) begin
@@ -52,16 +52,12 @@ task automatic ff_timeout_precharge; input [1:0]bank;
 task automatic wait_for_ram_wait; if (returnToWait) begin
   mstatefc <= 0; macrostate <= RAM_M_READY; end endtask
 
-(* MARK_DEBUG = "TRUE" *)
 wire [1:0]targetBank;
 assign targetBank = addr[24:23];
-(* MARK_DEBUG = "TRUE" *)
 wire [12:0]targetRow;
 assign targetRow = addr[22:10];
-(* MARK_DEBUG = "TRUE" *)
 wire [8:0]targetColumn;
 assign targetColumn = addr[9:1];
-(* MARK_DEBUG = "TRUE" *)
 logic targetUL;
 assign targetUL = addr[0];
 

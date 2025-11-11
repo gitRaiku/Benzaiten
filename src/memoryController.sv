@@ -21,7 +21,7 @@ module memoryController(
   output logic        s_we_n,  output logic        s_cke,
   output logic [1:0]  s_dqm,   output logic [12:0] s_addr,
   output logic [1:0]  s_bs,    inout  logic [15:0] s_dq,
-  output logic [15:0] gpio
+  output logic [31:0] gpio
 );
 module sextender_m(input logic [31:0]in, input logic usgn,
                  input logic [1:0]len, output logic [31:0]out);

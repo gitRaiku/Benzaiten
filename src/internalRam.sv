@@ -6,7 +6,7 @@ module internalRam(
   input logic [31:0]addr,
   input logic [1:0]oplen, input logic we,   /// TODO: Add input logic for non 8-bit values
   input logic [31:0]data, output logic [31:0]result, /// TODO: Currently top 8-bits for every cell
-  output logic [15:0]gpio
+  output logic [31:0]gpio
   );
 
   // TODO: Make the ram actually use the correct fabric
@@ -26,9 +26,9 @@ module internalRam(
       if (enable) begin
         if (addr == 32'hFFFFFFFF) begin
           if (we) begin
-            gpio <= data[15:0];
+            gpio <= data;
           end else begin
-            result <= {16'h0000, gpio};
+            result <= gpio;
           end
         end else begin
           result <= ram[addr >> 2];

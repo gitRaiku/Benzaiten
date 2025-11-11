@@ -10,7 +10,7 @@ module main(
   output logic [1:0]s_dqm, output logic [12:0]s_addr,
   output logic [1:0]s_bs,  inout logic [15:0]s_dq,
 
-  output [15:0]gpio
+  output [31:0]gpio
   );
 
   wire clk;
