@@ -33,12 +33,12 @@ module alucon(
         op2 = imm;
       end
       INS_U: begin
-        if (op == 7'b00101_11) begin
+        if (op == 7'b00101_11) begin /// AUIPC
           op1 = pc;
         end else begin
           op1 = 32'h0000;
         end
-        op2 = imm;
+        op2 = imm << 12;
       end
       INS_J: begin
         op1 = 32'h0000;
@@ -75,7 +75,7 @@ module alucon(
       7'b01100_11:
         case (func)
           9'b000000_000: aluop = ALU_ADD;
-          9'b010000_000: aluop = ALU_SUB;
+          9'b100000_000: aluop = ALU_SUB;
           9'b000000_010: aluop = ALU_LT;
           9'b000000_011: aluop = ALU_LTU;
           9'b000000_111: aluop = ALU_AND;

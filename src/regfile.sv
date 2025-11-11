@@ -11,7 +11,6 @@ module regfile(
   output logic [31:0]res2
   );
 
-  /// TODO: See if you can use a better primitive than registers for this
   (* ram_style = "distributed" *) logic [31:0]memory1[32];
   (* ram_style = "distributed" *) logic [31:0]memory2[32];
   assign res1 = memory1[rs1];

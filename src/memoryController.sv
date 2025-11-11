@@ -120,7 +120,7 @@ always_ff @(posedge clk) begin
         data_source <= 0;
       end else begin
         ram_enable <= 1;
-        ram_addr <= data_addr[31:8];
+        ram_addr <= data_addr[24:0] - IMEM_CUTOFF;
         ram_we <= data_we;
         ram_data <= data_wdata;
         ram_oplen <= data_oplen;

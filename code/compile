@@ -17,7 +17,9 @@ if [ -z $COMPC ]; then
  rm $1.o
 
  ./printram $1.bin > ram.mem
- # rm $1.bin
+ if [ -z $KEEPBIN ]; then
+   rm $1.bin
+ fi
 else
  CDIR="$PWD"
  cd /home/raiku/Git/riscv-gnu-toolchain/prefix/

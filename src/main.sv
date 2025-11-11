@@ -65,7 +65,7 @@ module main(
 
   logic [31:0]instruction;
   logic [31:0]pc;
-  logic [31:0]jumplen;
+  logic [31:0]nextpc;
   logic [7:0]init_wait;
 
   cpustage_t state;
@@ -87,7 +87,7 @@ module main(
       init_wait <= 8'h00;
 
       instruction <= 32'h00000013;
-      jumplen <= 32'h00000000;
+      nextpc <= 32'h00000004;
     end else begin
       /*
       * Read Instr
@@ -140,10 +140,11 @@ module main(
           endcase
 
           case (instr_op)
-            7'b11001_11: jumplen <= alu_result; // JALR
-            7'b11011_11: jumplen <= instr_imm; // JAL
-            7'b11000_11: jumplen <= (alu_result[0] != instr_func[0]) ? instr_imm : 32'h0004; // BXX
-            default: jumplen <= 32'h0004;
+            7'b11001_11: nextpc <= alu_result; // JALR
+            7'b11011_11: nextpc <= pc + instr_imm; // JAL
+            7'b11000_11: nextpc <= pc + ((alu_result[0] != instr_func[0]) ? instr_imm : 32'h0004);
+                                        // BXX
+            default: nextpc <= pc + 32'h0004;
           endcase
           state <= CPU_MEM; /// TODO: Shortcircuit
         end
@@ -160,10 +161,16 @@ module main(
           end
         end
         CPU_WB: begin
-          if (instr_op != 7'b01000_11) begin // Store instructions
+          if ((instr_op == 7'b01100_11) || // R-type
+              (instr_op == 7'b00100_11) || // I-type arithmetic
+              (instr_op == 7'b00000_11) || // Loads
+              (instr_op == 7'b01101_11) || // LUI
+              (instr_op == 7'b00101_11) || // AUIPC
+              (instr_op == 7'b11011_11) || // JAL
+              (instr_op == 7'b11001_11)) begin /// JALR
             regfile_we <= 1'b1;
           end
-          pc <= pc + jumplen;
+          pc <= nextpc;
           state <= CPU_FETCH;
         end
       endcase
