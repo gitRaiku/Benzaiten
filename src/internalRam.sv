@@ -10,7 +10,7 @@ module internalRam(
   );
 
   // TODO: Make the ram actually use the correct fabric
-  (* ram_style = "block" *) logic [31:0]ram[300]; /// TODO: Fix
+  (* ram_style = "block" *) logic [31:0]ram[512]; /// TODO: Fix
 
   initial begin
     $readmemh("ram.mem", ram);

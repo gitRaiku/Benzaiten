@@ -26,6 +26,7 @@ module main(
 
   wire rst;
   assign rst = !rst_n_in || rst_internal;
+  /// Create 200k for sdcard
   /*
   logic clk_locked;
   logic clk_10, clk_50, clk_100;
@@ -33,8 +34,8 @@ module main(
                     .resetn(rst), .clk_in1(clk_50_in));
   */
 
-  assign led_2_n = !gpio[12];
-  assign led_1_n = !gpio[15];
+  assign led_2_n = rst_n_in;
+  assign led_1_n = button_1_n;
 
   logic [6:0]instr_op;
   logic [9:0]instr_func;

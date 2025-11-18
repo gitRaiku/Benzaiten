@@ -8,8 +8,8 @@ set_property PACKAGE_PIN C8 [get_ports led_1_n]
 set_property PACKAGE_PIN D8 [get_ports led_2_n]
 
 # button 0
-set_property PACKAGE_PIN H18 [get_ports rst_n_in]
-set_property PACKAGE_PIN H17 [get_ports button_1_n]
+set_property PACKAGE_PIN H17 [get_ports rst_n_in]
+set_property PACKAGE_PIN H18 [get_ports button_1_n]
 set_property PACKAGE_PIN R2 [get_ports clk_50_in]
 
 set_property PACKAGE_PIN P16 [get_ports s_clk]
@@ -125,5 +125,6 @@ set_input_jitter [get_clocks -of_objects [get_ports clk_50_in]] 0.200
 # set_input_delay -min 2.5 -clock [get_clocks clk_50_in] [get_ports button_1_n]
 # set_input_delay -max 5.0 -clock [get_clocks clk_50_in] [get_ports s_dq[*]]
 # set_input_delay -min 2.5 -clock [get_clocks clk_50_in] [get_ports s_dq[*]]
+
 
 
