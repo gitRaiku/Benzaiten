@@ -23,6 +23,7 @@ module memoryController(
   output logic [1:0]  s_bs,    inout  logic [15:0] s_dq,
   output logic [31:0] gpio
 );
+
 module sextender_m(input logic [31:0]in, input logic usgn,
                  input logic [1:0]len, output logic [31:0]out);
   always_comb begin
