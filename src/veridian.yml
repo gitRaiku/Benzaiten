@@ -1,0 +1,15 @@
+include_dirs:
+  - ./src/
+source_dirs: 
+  - ./src/
+auto_search_workdir: true
+
+verilator:
+  syntax:
+    enabled: true
+    args:
+      - "--sv"
+      - "-Wall"
+      - "--Wno-fatal"
+      - "--timing"
+      - "--bbox-sys"

@@ -17,6 +17,7 @@ module main(
   assign clk = clk_50_in;
 
   wire rst_internal;
+  /// verilog_lint: waive unknown-module TODO: Make work
   SRL16 #(.INIT(16'h1111)) srl_rst(
     .Q(rst_internal),
     .A0(1'b1), .A1(1'b1),
