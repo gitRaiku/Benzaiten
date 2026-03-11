@@ -5,10 +5,10 @@ module spi(
   input enable, output valid,
 
   input cclk, input cs,
-  input [7:0]obuf, output [7:0]ibuf,
+  input logic [7:0]obuf, output logic [7:0]ibuf,
 
-  output ss_n, output sclk,
-  output mosi, input miso
+  output logic ss_n, output logic sclk,
+  output logic mosi, input miso
   );
 
   logic internal_valid;
@@ -31,8 +31,7 @@ module spi(
           sclk <= ~sclk;
           if (sclk) begin
             cpos <= cpos + 1;
-            mosi <= obuf[7];
-            obuf <= {obuf[6:0], 1'b0};
+            mosi <= obuf[7 - cpos];
           end else begin
             ibuf <= {ibuf[6:0], miso};
           end

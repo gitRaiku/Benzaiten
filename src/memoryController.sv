@@ -1,5 +1,26 @@
 `timescale 1ns / 1ps
 
+module sextender_m(input logic [31:0]in, input logic usgn,
+                 input logic [1:0]len, output logic [31:0]out);
+  always_comb begin
+    if (usgn) begin
+      unique case (len)
+        2'b00: out = { {24{1'b0}}, in[7:0] } ;
+        2'b01: out = { {16{1'b0}}, in[15:0] } ;
+        2'b10: out = { {8{1'b0}}, in[23:0] } ;
+        2'b11: out = { in[31:0] } ;
+      endcase
+    end else begin
+      unique case (len)
+        2'b00: out = { {24{in[7]}}, in[7:0] } ;
+        2'b01: out = { {16{in[15]}}, in[15:0] } ;
+        2'b10: out = { {8{in[23]}}, in[23:0] } ;
+        2'b11: out = { in[31:0] } ;
+      endcase
+    end
+  end
+endmodule
+
 module memoryController(
   input logic clk, rst,
   input  logic        instr_enable,
@@ -24,27 +45,6 @@ module memoryController(
   output logic [31:0] gpio
 );
 
-module sextender_m(input logic [31:0]in, input logic usgn,
-                 input logic [1:0]len, output logic [31:0]out);
-  always_comb begin
-    if (usgn) begin
-      unique case (len)
-        2'b00: out = { {24{1'b0}}, in[7:0] } ;
-        2'b01: out = { {24{1'b0}}, in[15:0] } ;
-        2'b10: out = { {24{1'b0}}, in[23:0] } ;
-        2'b11: out = { in[31:0] } ;
-      endcase
-    end else begin
-      unique case (len)
-        2'b00: out = { {24{in[7]}}, in[7:0] } ;
-        2'b01: out = { {24{in[15]}}, in[15:0] } ;
-        2'b10: out = { {24{in[23]}}, in[23:0] } ;
-        2'b11: out = { in[31:0] } ;
-      endcase
-    end
-  end
-endmodule
-
 logic [31:0]internal_data_result;
 sextender_m sextender(
   .in(internal_data_result), .usgn(data_unsigned),
@@ -66,6 +66,19 @@ sdram ram(
   .s_we_n(s_we_n),     .s_cke(s_cke),
   .s_dqm(s_dqm),       .s_addr(s_addr),
   .s_bs(s_bs),         .s_dq(s_dq));
+
+logic [31:0]cache_addr, cache_in;
+logic [31:0]cache_out;
+logic cache_rw, cache_enable;
+logic cache_overwrite, cache_valid;
+
+memcache cache(
+  .clk(clk), .rst(rst),
+  .addr(cache_addr), .in(cache_in),
+  .rw(cache_rw), .enable(cache_enable), 
+  .overwrite(cache_overwrite), .valid(cache_valid),
+  .out(cache_out)
+  );
 
 localparam logic [7:0]IMEM_CUTOFF = 8'hFF;
 logic iram_enable, iram_valid, iram_we;
