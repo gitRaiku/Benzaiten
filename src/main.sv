@@ -17,7 +17,6 @@ module main(
   assign clk = clk_50_in;
 
   wire rst_internal;
-  /// verilog_lint: waive unknown-module TODO: Make work
   SRL16 #(.INIT(16'h1111)) srl_rst(
     .Q(rst_internal),
     .A0(1'b1), .A1(1'b1),
@@ -54,41 +53,53 @@ module main(
 
   logic [31:0]alu_result;
 
-  logic [31:0]mem_instr_result;
-  logic [31:0]mem_instr_addr;
-  logic mem_instr_enable, mem_instr_valid;
-  logic mem_data_enable, mem_data_valid;
-  logic mem_data_unsigned;
-  logic [1:0]mem_data_oplen;
-  logic [31:0]mem_data_addr;
-  logic [31:0]mem_data_wdata;
-  logic [31:0]mem_data_result;
-  logic mem_data_we;
-
   /// TODO: Support ecall, ebreak, fence
   logic [31:0]instruction;
   logic [31:0]pc;
   logic [31:0]nextpc;
   logic [7:0]init_wait;
 
+  logic mem_we, mem_enable, mem_valid;
+  logic [1:0]mem_oplen;
+  logic [31:0]mem_addr, mem_in, mem_out;
+  memcon2 memcon(
+    .clk(clk), .rst(rst), .enable(mem_enable), .valid(mem_valid),
+    .addr(mem_addr), .we(mem_we), .oplen(mem_oplen),
+    .in(mem_in), .out(mem_out),
+
+    .pram_clk(s_clk), .pram_cs_n(s_cs_n),
+    .pram_ras_n(s_ras_n), .pram_cas_n(s_cas_n),
+    .pram_we_n(s_we_n), .pram_cke(s_cke),
+    .pram_dqm(s_dqm), .pram_addr(s_addr),
+    .pram_bs(s_bs), .pram_dq(s_dq),
+
+    .gpio(gpio)
+    );
+
+  instructionDecoder idec(.instr(instruction), .op(instr_op),
+                          .func(instr_func), .rs1(instr_rs1),
+                          .rs2(instr_rs2), .rd(instr_rd),
+                          .imm(instr_imm), .oplen(instr_oplen),
+                          .instrType(instr_type)
+  );
+
+  regfile rf(.clk(clk), .rst(rst), .write_enabled(regfile_we),
+             .rs1(instr_rs1), .rs2(instr_rs2), .rd(instr_rd),
+             .data(regfile_data), .res1(regfile_res1), .res2(regfile_res2));
+
+  alucon acon(.op(instr_op), .func(instr_func), .pc(pc), .itype(instr_type),
+              .rf1(regfile_res1), .rf2(regfile_res2), .imm(instr_imm), .result(alu_result));
+
+  typedef enum { CPU_NEVER_INITED, CPU_FETCH, CPU_DECODE, CPU_EX, CPU_MEM, CPU_WB } cpustage_t;
   cpustage_t state;
   always_ff @(posedge clk) begin
+    regfile_we <= 1'b0;
+    mem_enable <= 0;
     if (rst) begin
       pc <= 32'h0000;
-      mem_instr_enable <= 1'b0;
-      mem_data_enable <= 1'b0;
       regfile_data <= 32'h0000;
-      regfile_we <= 1'b0;
       state <= CPU_NEVER_INITED;
-
-      mem_instr_addr <= 32'h00000000;
-      mem_data_addr <= 32'h00000000;
-      mem_data_we <= 1'b0;
-      mem_data_oplen <= 1'b0;
-      mem_data_unsigned <= 1'b0;
-      mem_data_wdata <= 32'h00000000;
       init_wait <= 8'h00;
-
       instruction <= 32'h00000013;
       nextpc <= 32'h00000004;
     end else begin
@@ -97,9 +108,6 @@ module main(
       * (Read Data)
       * Execute
       */
-      regfile_we <= 1'b0;
-      mem_instr_enable <= 1'b0;
-      mem_data_enable  <= 1'b0;
       unique case (state)
         CPU_NEVER_INITED: begin
           if (init_wait == 8'h20) begin
@@ -108,30 +116,31 @@ module main(
           init_wait <= init_wait + 1;
         end
         CPU_FETCH: begin
-          mem_instr_addr <= pc;
-          mem_instr_enable <= 1'b1;
-          if (mem_instr_valid) begin
-            mem_instr_enable <= 1'b0;
-            instruction <= mem_instr_result;
+          mem_addr <= pc;
+          mem_we <= 0;
+          mem_enable <= 1;
+          if (mem_valid) begin
+            mem_enable <= 0;
+            instruction <= mem_out;
             state <= CPU_EX;
           end
         end
         CPU_EX: begin
           case (instr_op)
             7'b00000_11: begin // Load from ram
-              mem_data_enable <= 1'b1;
-              mem_data_addr <= alu_result;
-              mem_data_we <= 1'b0;
-              mem_data_oplen <= instr_oplen;
-              mem_data_unsigned <= instr_func[2];
+              mem_enable <= 1;
+              mem_addr <= alu_result;
+              mem_we <= 0;
+              mem_oplen <= instr_oplen;
+              /// mem_unsigned_read_len = instr_func[2];
               regfile_data <= 32'h0000;
             end
             7'b01000_11: begin // Store to ram
-              mem_data_enable <= 1'b1;
-              mem_data_addr <= alu_result;
-              mem_data_we <= 1'b1;
-              mem_data_wdata <= regfile_res2;
-              mem_data_oplen <= instr_oplen;
+              mem_enable <= 1;
+              mem_addr <= alu_result;
+              mem_we <= 1;
+              mem_in <= regfile_res2;
+              mem_oplen <= instr_oplen;
               regfile_data <= 32'h0000;
             end
             7'b11001_11,7'b11011_11: begin // JAL JALR
@@ -152,11 +161,11 @@ module main(
           state <= CPU_MEM; /// TODO: Shortcircuit
         end
         CPU_MEM: begin
-          if (mem_data_enable) begin
-            mem_data_enable <= 1'b1;
-            if (mem_data_valid) begin
-              mem_data_enable <= 1'b0;
-              regfile_data <= mem_data_result;
+          if (mem_enable) begin
+            mem_enable <= 1'b1;
+            if (mem_valid) begin
+              mem_enable <= 1'b0;
+              regfile_data <= mem_out;
               state <= CPU_WB;
             end
           end else begin
@@ -179,39 +188,5 @@ module main(
       endcase
     end
   end
-
-  memoryController memcon(
-    .clk(clk), .rst(rst),
-
-    .instr_addr(mem_instr_addr),
-    .instr_result(mem_instr_result),
-
-    .instr_enable(mem_instr_enable), .instr_valid(mem_instr_valid), .data_enable(mem_data_enable),
-    .data_valid(mem_data_valid), .data_oplen(mem_data_oplen), .data_unsigned(mem_data_unsigned),
-    .data_addr(mem_data_addr), .data_wdata(mem_data_wdata), .data_we(mem_data_we),
-    .data_result(mem_data_result),
-
-    .s_clk(s_clk), .s_cs_n(s_cs_n),
-    .s_ras_n(s_ras_n), .s_cas_n(s_cas_n),
-    .s_we_n(s_we_n), .s_cke(s_cke),
-    .s_dqm(s_dqm), .s_addr(s_addr),
-    .s_bs(s_bs), .s_dq(s_dq),
-
-    .gpio(gpio)
-    );
-
-  instructionDecoder idec(.instr(instruction), .op(instr_op),
-                          .func(instr_func), .rs1(instr_rs1),
-                          .rs2(instr_rs2), .rd(instr_rd),
-                          .imm(instr_imm), .oplen(instr_oplen),
-                          .instrType(instr_type)
-  );
-
-  regfile rf(.clk(clk), .rst(rst), .write_enabled(regfile_we),
-             .rs1(instr_rs1), .rs2(instr_rs2), .rd(instr_rd),
-             .data(regfile_data), .res1(regfile_res1), .res2(regfile_res2));
-
-  alucon acon(.op(instr_op), .func(instr_func), .pc(pc), .itype(instr_type),
-              .rf1(regfile_res1), .rf2(regfile_res2), .imm(instr_imm), .result(alu_result));
 
 endmodule
