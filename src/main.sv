@@ -118,6 +118,7 @@ module main(
         CPU_FETCH: begin
           mem_addr <= pc;
           mem_we <= 0;
+          mem_oplen <= 3;
           mem_enable <= 1;
           if (mem_valid) begin
             mem_enable <= 0;

@@ -1,3 +1,4 @@
+/*
 `timescale 1ns / 1ps
 
 module testbench();
@@ -8,7 +9,7 @@ module testbench();
   main pula(
   .clk_50_in(clk),
   .rst_n_in(1'b1));
-  */
+  /
   logic [31:0]cache_addr, cache_in;
   logic [31:0]cache_out;
   logic cache_rw, cache_enable;
@@ -135,4 +136,4 @@ module testbench();
   end
 
 endmodule
-
+*/

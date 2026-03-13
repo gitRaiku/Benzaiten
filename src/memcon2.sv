@@ -44,7 +44,7 @@ memcache cache(
 logic iram_enable, iram_valid, iram_we;
 logic [1:0]iram_oplen;
 logic [31:0]iram_addr, iram_in, iram_out;
-internalRam iram(
+internalRam #(.GPIO_ADDR(LIMIT_IRAM)) iram(
   .clk(clk), .rst(rst), .enable(iram_enable), .valid(iram_valid),
   .addr(iram_addr), .oplen(iram_oplen), .we(iram_we),
   .in(iram_in), .out(iram_out), .gpio(gpio));
@@ -92,13 +92,14 @@ always_ff @(posedge clk) begin
   cache_enable <= 0;
   cache_init <= 0;
   ram_enable <= 0;
+  valid <= 0;
 
   if (rst) begin
     state <= MC_READY;
   end else if (enable) begin
     unique case (state)
       MC_READY: begin
-        if (addr == LIMIT_IRAM) begin
+        if (addr <= LIMIT_IRAM) begin
           iram_enable <= 1;
           iram_addr <= addr;
           iram_oplen <= oplen;

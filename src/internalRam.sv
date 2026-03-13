@@ -38,5 +38,7 @@ module internalRam #(parameter GPIO_ADDR=32'hFFFFFFFF) (
     end
   end
 
+  logic _unused_ok;
+  assign _unused_ok = &oplen;
 
 endmodule
