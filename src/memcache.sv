@@ -4,7 +4,7 @@ module memcache(
   input logic clk, rst,
 
   input logic [31:0]addr, input logic [31:0] in,
-  input logic rw, input logic enable, input logic overwrite,
+  input logic we, input logic enable, input logic overwrite,
   output logic valid, output logic [31:0]out
   );
 
@@ -12,19 +12,24 @@ module memcache(
   /// cache[tag][redir[tag][gat]][laddr] = int
   
   logic [2:0]tag;  // 8x (small)
-  logic [20:0]id;  // 8x (big)
+  logic [19:0]id;  // 8x (big)
 
-  logic [7:0][7:0][20:0]mapping; /// mapping[tag][gat] = id (in accessing order)
+  logic [7:0][7:0][19:0]mapping; /// mapping[tag][gat] = id (in accessing order)
   logic [7:0][7:0]fdn; /// fdn[tag][gat] = funky dirty native HTML5
-  logic [7:0][7:0][2:0]redir; /// mapping[tag][gat] = id (in accessing order)
+  logic [7:0][7:0][2:0]redir; /// cache[tag][redir[tag][gat]][laddr] = int
 
   logic [2:0]gat;
-  logic [7:0]laddr;
+  logic [8:0]laddr;
+
+  logic [31:0]memread;
+  logic [31:0]cachemissaddr;
+  logic cachemiss;
+  assign out = cachemiss ? cachemissaddr : memread;
 
   always_comb begin
-    laddr = addr[7:0];
-    tag = addr[10:8];
-    id = addr[31:11];
+    laddr = addr[8:0];
+    tag = addr[11:9];
+    id = addr[31:12];
 
          if (mapping[tag][0] == id) gat = 0;
     else if (mapping[tag][1] == id) gat = 1;
@@ -35,15 +40,13 @@ module memcache(
     else if (mapping[tag][6] == id) gat = 6;
     else                            gat = 7;
 
-    out = cache[tag][redir[tag][gat]][laddr];
     valid = (mapping[tag][gat] == id);
+    memread = cache[tag][redir[tag][gat]][laddr];
   end
-
-  wire [31:0]cache_current;
-  assign cache_current = cache[tag][redir[tag][gat]][laddr];
 
   logic [3:0]cpos;
   always_ff @(posedge clk) begin
+    cachemiss <= 0;
     if (rst) begin
       cpos <= 0;
     end else begin
@@ -51,19 +54,24 @@ module memcache(
         cpos <= cpos + 1;
         fdn[cpos] <= 0;
         redir[cpos] <= {3'h0, 3'h1, 3'h2, 3'h3, 3'h4, 3'h5, 3'h6, 3'h7}; 
-        mapping[cpos] <= {8{21'h1FFFFF}};
+        mapping[cpos] <= {8{20'hFFFFF}};
         fdn[cpos] <= 0;
       end else begin
-        if (enable && rw) begin
+        if (enable) begin
           if (valid) begin
-            cache[tag][redir[tag][gat]][laddr] <= in;
-            fdn[tag][gat] <= 1;
+            if (we) begin
+              cache[tag][redir[tag][gat]][laddr] <= in;
+              fdn[tag][gat] <= 1;
+            end
           end else begin
             if (overwrite) begin
               mapping[tag] <= {id, mapping[tag][7:1]};
               redir[tag] <= {redir[tag][0], redir[tag][7:1]}; /// TODO: Make it so it's actually the last accessed cache line
               fdn[tag] <= {1'b1, fdn[tag][7:1]};
               cache[tag][redir[tag][0]][laddr] <= in;
+            end else begin
+              cachemissaddr <= {mapping[tag][redir[tag][0]], tag, 9'h00000};
+              cachemiss <= 1;
             end
           end
         end

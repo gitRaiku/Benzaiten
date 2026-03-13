@@ -3,9 +3,9 @@
 module sdram(
   input logic clk, rst,
   input logic enable, output logic valid,
-  input logic [24:0]addr,
+  input logic [31:0]addr,
   input logic [1:0]oplen, input logic we,   /// TODO: Add input logic for non 8-bit values
-  input logic [31:0]data, output logic [31:0]result, /// TODO: Currently top 8-bits for every cell
+  input logic [31:0]in, output logic [31:0]out, /// TODO: Currently top 8-bits for every cell
   output logic        s_clk,   output logic        s_cs_n, /// Get discarded
   output logic        s_ras_n, output logic        s_cas_n,
   output logic        s_we_n,  output logic        s_cke,
@@ -58,8 +58,6 @@ wire [12:0]targetRow;
 assign targetRow = addr[22:10];
 wire [8:0]targetColumn;
 assign targetColumn = addr[9:1];
-logic targetUL;
-assign targetUL = addr[0];
 
 always_ff @(posedge clk) begin
   if (rst) begin
@@ -78,7 +76,7 @@ always_ff @(posedge clk) begin
     activeBankTimeout[1] <= 0;
     activeBankTimeout[2] <= 0;
     activeBankTimeout[3] <= 0;
-    result <= 32'h00000000;
+    out <= 32'h00000000;
   end else begin
     mstatefc <= 1;
     valid <= 0;
@@ -93,9 +91,9 @@ always_ff @(posedge clk) begin
               bankSelect <= targetBank; /// TODO Handle non 16 bit values
               rowSelect <= targetRow;
               columnSelect <= targetColumn;
-              dqSelect <= data[15:0];
+              dqSelect <= in[15:0];
               macrostate <= RAM_M_ACCESS;
-            end else if (activeBank[targetBank == 1]) begin
+            end else if (activeBank[targetBank] == 1) begin
               // Implied: && activeRow[targetBank] != targetRow
               bankSelect <= targetBank;
               rowSelect <= targetRow;
@@ -126,7 +124,7 @@ always_ff @(posedge clk) begin
           wait_for_ram_wait;
           if (returnToWait) begin
             if (!we) begin
-              result <= {16'h00, readResult}; /// TODO: Non 16 bits
+              out <= {16'h00, readResult}; /// TODO: Non 16 bits
             end
             valid <= 1;
           end
@@ -177,14 +175,12 @@ always_ff @(posedge clk) begin
   end
 end
 
-
-
 localparam logic[15:0] HI_Z = 16'hZZZZ;
 task automatic op;
   input cke, cs_n, ras_n, cas_n, we_n;
   input [1:0]dqm;
   input [1:0]bs;
-  input [12:0]addr;
+  input [12:0]caddr;
   input [15:0]cdq;
   s_cke   <= cke;
   s_cs_n  <= cs_n;
@@ -193,7 +189,7 @@ task automatic op;
   s_we_n  <= we_n;
   s_dqm   <= dqm;
   s_bs    <= bs;
-  s_addr  <= addr;
+  s_addr  <= caddr;
   dq    <= cdq;
 endtask
 
@@ -226,12 +222,12 @@ endtask
 
 task automatic write;
   input [1 : 0] bank; input [8 : 0] column; input [15 : 0] dq_in;
-  begin op(1,0,1,0,0,0,bank,column,dq_in); end
+  begin op(1,0,1,0,0,0,bank, {{4{1'b0}}, column},dq_in); end
 endtask
 
 task automatic read;
   input [1 : 0] bank; input [8 : 0] column;
-  begin op(1,0,1,0,1,0,bank,column,HI_Z); end
+  begin op(1,0,1,0,1,0,bank, {{4{1'b0}}, column},HI_Z); end
 endtask
 
 /// tCK = 20nS
@@ -245,10 +241,10 @@ task automatic enter_wait; begin state <= RAM_WAIT; returnToWait <= 1; curState 
 always_ff @(posedge clk) begin
   if (rst) begin
     state <= RAM_INIT;
-    curState <= 7'h00;
+    curState <= 8'h00;
     readResult <= 16'h0000;
   end else begin
-    curState <= 7'h00;
+    curState <= 8'h00;
     goToTargetState <= 0;
     returnToWait <= 0;
     case (state)
@@ -318,5 +314,8 @@ always_ff @(posedge clk) begin
     endcase
   end
 end
+
+logic _unused_ok;
+assign _unused_ok = &in & &oplen & &addr;
 
 endmodule

@@ -1,3 +1,4 @@
+/*
 `timescale 1ns / 1ps
 
 module sextender_m(input logic [31:0]in, input logic usgn,
@@ -69,13 +70,13 @@ sdram ram(
 
 logic [31:0]cache_addr, cache_in;
 logic [31:0]cache_out;
-logic cache_rw, cache_enable;
+logic cache_we, cache_enable;
 logic cache_overwrite, cache_valid;
 
 memcache cache(
   .clk(clk), .rst(rst),
   .addr(cache_addr), .in(cache_in),
-  .rw(cache_rw), .enable(cache_enable), 
+  .we(cache_we), .enable(cache_enable), 
   .overwrite(cache_overwrite), .valid(cache_valid),
   .out(cache_out)
   );
@@ -144,4 +145,4 @@ always_ff @(posedge clk) begin
   end
 end
 
-endmodule
+endmodule*/

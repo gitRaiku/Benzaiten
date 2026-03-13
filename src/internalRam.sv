@@ -1,11 +1,11 @@
 `timescale 1ns / 1ps
 
-module internalRam(
+module internalRam #(parameter GPIO_ADDR=32'hFFFFFFFF) (
   input logic clk, rst,
   input logic enable, output logic valid,
   input logic [31:0]addr,
   input logic [1:0]oplen, input logic we,   /// TODO: Add input logic for non 8-bit values
-  input logic [31:0]data, output logic [31:0]result, /// TODO: Currently top 8-bits for every cell
+  input logic [31:0]in, output logic [31:0]out, /// TODO: Currently top 8-bits for every cell
   output logic [31:0]gpio
   );
 
@@ -19,19 +19,19 @@ module internalRam(
   always_ff @(posedge clk) begin
     if (rst) begin
       valid <= 0;
-      result <= 0;
+      out <= 0;
       gpio <= 0;
     end else begin
       valid <= 0;
       if (enable) begin
-        if (addr == 32'hFFFFFFFF) begin
+        if (addr == GPIO_ADDR) begin
           if (we) begin
-            gpio <= data;
+            gpio <= in;
           end else begin
-            result <= gpio;
+            out <= gpio;
           end
         end else begin
-          result <= ram[addr >> 2];
+          out <= ram[addr >> 2];
         end
         valid <= 1;
       end
