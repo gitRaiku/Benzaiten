@@ -65,6 +65,7 @@ module main(
   logic [31:0]mem_data_result;
   logic mem_data_we;
 
+  /// TODO: Support ecall, ebreak, fence
   logic [31:0]instruction;
   logic [31:0]pc;
   logic [31:0]nextpc;

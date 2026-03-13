@@ -4,8 +4,8 @@ module memcache(
   input logic clk, rst,
 
   input logic [31:0]addr, input logic [31:0] in,
-  input logic we, input logic enable, input logic overwrite,
-  output logic valid, output logic [31:0]out
+  input logic we, input logic enable, 
+  input logic overwrite, output logic valid, output logic [31:0]out
   );
 
   (* ram_style = "distributed" *) logic [7:0][7:0][511:0][31:0]cache; 
@@ -41,6 +41,7 @@ module memcache(
     else                            gat = 7;
 
     valid = (mapping[tag][gat] == id);
+
     memread = cache[tag][redir[tag][gat]][laddr];
   end
 
