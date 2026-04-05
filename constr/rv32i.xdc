@@ -91,6 +91,11 @@ set_property PACKAGE_PIN K6 [get_ports {gpio[29]}]
 set_property PACKAGE_PIN L2 [get_ports {gpio[30]}]
 set_property PACKAGE_PIN L3 [get_ports {gpio[31]}]
 
+set_property PACKAGE_PIN E16 [get_ports spi_ss_n]
+set_property PACKAGE_PIN E15 [get_ports spi_sclk]
+set_property PACKAGE_PIN D16 [get_ports spi_mosi]
+set_property PACKAGE_PIN D15 [get_ports spi_miso]
+
 set_property IOSTANDARD LVCMOS33 [get_ports rst_n_in]
 set_property IOSTANDARD LVCMOS33 [get_ports button_1_n]
 set_property IOSTANDARD LVCMOS33 [get_ports clk_50_in]
@@ -108,6 +113,10 @@ set_property IOSTANDARD LVCMOS33 [get_ports {s_dqm[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {s_addr[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {s_dq[*]}]
 set_property IOSTANDARD LVCMOS33 [get_ports {gpio[*]}]
+set_property IOSTANDARD LVCMOS33 [get_ports spi_ss_n]
+set_property IOSTANDARD LVCMOS33 [get_ports spi_sclk]
+set_property IOSTANDARD LVCMOS33 [get_ports spi_mosi]
+set_property IOSTANDARD LVCMOS33 [get_ports spi_miso]
 
 create_clock -period 20.000 [get_ports clk_50_in]
 set_input_jitter [get_clocks -of_objects [get_ports clk_50_in]] 0.200

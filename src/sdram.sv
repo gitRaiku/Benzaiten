@@ -13,6 +13,8 @@ module sdram(
   output logic [1:0]  s_bs,    inout  logic [15:0] s_dq
   );
 
+logic _unused_ok;
+assign _unused_ok = &in & &oplen & &addr;
 assign s_clk = clk;
 
 logic [15:0]dq;
@@ -62,8 +64,13 @@ assign targetColumn = addr[9:1];
 always_ff @(posedge clk) begin
   if (rst) begin
     macrostate <= RAM_M_NEVER_INIT;
+    targetState <= RAM_WAIT;
     mstatefc <= 0;
     valid <= 0;
+    out <= 0;
+    rowSelect <= 0;
+    columnSelect <= 0;
+    dqSelect <= 0;
     activeBank[0] <= 0;
     activeBank[1] <= 0;
     activeBank[2] <= 0;
@@ -76,7 +83,6 @@ always_ff @(posedge clk) begin
     activeBankTimeout[1] <= 0;
     activeBankTimeout[2] <= 0;
     activeBankTimeout[3] <= 0;
-    out <= 32'h00000000;
   end else begin
     mstatefc <= 1;
     valid <= 0;
@@ -241,8 +247,11 @@ task automatic enter_wait; begin state <= RAM_WAIT; returnToWait <= 1; curState 
 always_ff @(posedge clk) begin
   if (rst) begin
     state <= RAM_INIT;
-    curState <= 8'h00;
-    readResult <= 16'h0000;
+    curState <= 0;
+    readResult <= 0;
+    goToTargetState <= 0;
+    returnToWait <= 0;
+    { s_cs_n, s_ras_n, s_cas_n, s_we_n, s_cke, s_dqm, s_addr, s_bs } <= 0;
   end else begin
     curState <= 8'h00;
     goToTargetState <= 0;
@@ -314,8 +323,5 @@ always_ff @(posedge clk) begin
     endcase
   end
 end
-
-logic _unused_ok;
-assign _unused_ok = &in & &oplen & &addr;
 
 endmodule

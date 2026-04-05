@@ -10,6 +10,9 @@ module main(
   output logic [1:0]s_dqm, output logic [12:0]s_addr,
   output logic [1:0]s_bs,  inout logic [15:0]s_dq,
 
+  output logic spi_ss_n, output logic spi_sclk,
+  output logic spi_mosi, input logic spi_miso,
+
   output [31:0]gpio
   );
 
@@ -17,14 +20,14 @@ module main(
   assign clk = clk_50_in;
 
   wire rst_internal;
-  SRL16 #(.INIT(16'h1111)) srl_rst(
+  SRL16 #(.INIT(16'hFFFF)) srl_rst(
     .Q(rst_internal),
-    .A0(1'b1), .A1(1'b1),
-    .A2(1'b1), .A3(1'b1),
+    .A0(1'b0), .A1(1'b0),
+    .A2(1'b1), .A3(1'b0),
     .CLK(clk), .D(1'b0)
   );
 
-  wire rst;
+  (* mark_debug = "true" *) wire rst;
   assign rst = !rst_n_in || rst_internal;
   /// Create 200k for sdcard
   /*
@@ -73,6 +76,9 @@ module main(
     .pram_dqm(s_dqm), .pram_addr(s_addr),
     .pram_bs(s_bs), .pram_dq(s_dq),
 
+    .spi_ss_n(spi_ss_n), .spi_sclk(spi_sclk),
+    .spi_mosi(spi_mosi), .spi_miso(spi_miso),
+
     .gpio(gpio)
     );
 
@@ -90,7 +96,7 @@ module main(
   alucon acon(.op(instr_op), .func(instr_func), .pc(pc), .itype(instr_type),
               .rf1(regfile_res1), .rf2(regfile_res2), .imm(instr_imm), .result(alu_result));
 
-  typedef enum { CPU_NEVER_INITED, CPU_FETCH, CPU_DECODE, CPU_EX, CPU_MEM, CPU_WB } cpustage_t;
+  typedef enum bit[2:0] { CPU_NEVER_INITED, CPU_FETCH, CPU_DECODE, CPU_EX, CPU_MEM, CPU_WB } cpustage_t;
   cpustage_t state;
   always_ff @(posedge clk) begin
     regfile_we <= 1'b0;
@@ -102,6 +108,10 @@ module main(
       init_wait <= 8'h00;
       instruction <= 32'h00000013;
       nextpc <= 32'h00000004;
+      mem_addr <= 0;
+      mem_in <= 0;
+      mem_we <= 0;
+      mem_oplen <= 0;
     end else begin
       /*
       * Read Instr

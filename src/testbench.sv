@@ -2,17 +2,15 @@
 
 module testbench();
   logic clk;
-  logic rst;
 
   main pula(
   .clk_50_in(clk),
-  .rst_n_in(1'b1));
+  .rst_n_in(1'b1),
+  .spi_miso(1'b0)
+  );
 
   initial begin
     clk <= 0;
-    rst <= 1;
-    #10;
-    rst <= 0;
   end
 
   always begin

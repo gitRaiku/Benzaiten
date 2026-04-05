@@ -16,6 +16,9 @@ module internalRam #(parameter GPIO_ADDR=32'hFFFFFFFF) (
     $readmemh("ram.mem", ram);
   end
 
+  logic _unused_ok;
+  assign _unused_ok = &oplen;
+
   always_ff @(posedge clk) begin
     if (rst) begin
       valid <= 0;
@@ -37,8 +40,5 @@ module internalRam #(parameter GPIO_ADDR=32'hFFFFFFFF) (
       end
     end
   end
-
-  logic _unused_ok;
-  assign _unused_ok = &oplen;
 
 endmodule

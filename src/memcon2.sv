@@ -12,6 +12,10 @@ module memcon2(
   output logic        pram_we_n,  output logic        pram_cke,
   output logic [1:0]  pram_dqm,   output logic [12:0] pram_addr,
   output logic [1:0]  pram_bs,    inout  logic [15:0] pram_dq,
+
+  output logic spi_ss_n, output logic spi_sclk,
+  output logic spi_mosi, input logic spi_miso,
+
   output logic [31:0] gpio
   );
 
@@ -27,17 +31,21 @@ module memcon2(
 localparam logic [31:0]LIMIT_IRAM = 32'h0FFFFFFF;
 localparam logic [31:0]START_RAM  = 32'h10000000;
 localparam logic [31:0]LIMIT_RAM  = 32'h3FFFFFFF;
-// localparam logic [31:0]START_SDC  = 32'h40000000;
-// localparam logic [31:0]LIMIT_SDC  = 32'hFFFFFFFF;
-
+localparam logic [31:0]START_SDC  = 32'h40000000;
+// verilator lint_off UNUSEDPARAM
+localparam logic [31:0]LIMIT_SDC  = 32'hFFFFFFFF;
+// verilator lint_on UNUSEDPARAM
 
 /// TODO: Learn secrets of hyperborea and write this code better
 /// TODO: Support non-aligned sub-32bit ops
-logic cache_we, cache_enable, cache_valid, cache_overwrite, cache_init;
+logic cache_we, cache_enable, cache_valid, cache_overwrite, cache_dirty;
 logic [31:0]cache_addr, cache_in, cache_out;
+logic cache_missed;
+assign cache_missed = !cache_valid & cache_dirty;
 memcache cache(
   .clk(clk), .rst(rst), .addr(cache_addr), .in(cache_in),
-  .we(cache_we), .enable(cache_enable), .out(cache_out),
+  .dirty(cache_dirty), .we(cache_we), .enable(cache_enable), 
+  .out(cache_out),
   .overwrite(cache_overwrite), .valid(cache_valid));
   
 
@@ -61,8 +69,15 @@ sdram ram(
     .s_bs(pram_bs), .s_dq(pram_dq));
 
 /// TODO: Implement sdcard
+logic [31:0]card_addr, card_in, card_out;
+logic card_enable, card_we, card_valid;
+sdcard card(
+    .clk(clk), .rst(rst), .enable(card_enable), .valid(card_valid),
+    .we(card_we), .in(card_in), .out(card_out), .addr(card_addr),
+    .spi_ss_n(spi_ss_n), .spi_sclk(spi_sclk),
+    .spi_mosi(spi_mosi), .spi_miso(spi_miso));
 
-typedef enum { MC_READY, MC_FLUSH, MC_RAM_FLUSH, MC_RAM_FLUSH_WAIT, MC_RAM_READ, MC_RAM_READ_WAIT, MC_SDC_FLUSH, MC_SDC_READ } mc_state_t;
+typedef enum { MC_READY, MC_FLUSH, MC_RAM_FLUSH, MC_RAM_FLUSH_WAIT, MC_RAM_READ, MC_RAM_READ_WAIT } mc_state_t;
 
 mc_state_t state;
 
@@ -72,15 +87,27 @@ task automatic cache_access; input logic [31:0]in_addr;
   cache_addr <= in_addr;
   cache_in <= in;
   cache_we <= we;
-  cache_init <= 1;
 
   if (cache_valid) begin
     cache_enable <= 0;
     out <= cache_out;
     valid <= 1;
   end
-  if (cache_init && !cache_valid) begin
+  if (cache_missed) begin
     state <= MC_FLUSH;
+  end
+endtask
+
+task automatic card_access; input logic [31:0]in_addr;
+  card_enable <= 1;
+  card_addr <= in_addr - START_SDC;
+  card_in <= in;
+  card_we <= we;
+
+  if (card_valid) begin
+    card_enable <= 0;
+    out <= card_out;
+    valid <= 1;
   end
 endtask
 
@@ -90,12 +117,28 @@ logic [31:0]flush_caddr;
 always_ff @(posedge clk) begin
   iram_enable <= 0;
   cache_enable <= 0;
-  cache_init <= 0;
   ram_enable <= 0;
+  card_enable <= 0;
   valid <= 0;
 
   if (rst) begin
     state <= MC_READY;
+    cache_addr <= 0;
+    cache_in <= 0;
+    iram_addr <= 0;
+    iram_in <= 0;
+    iram_we <= 0;
+    iram_oplen <= 0;
+    ram_addr <= 0;
+    ram_in <= 0;
+    ram_we <= 0;
+    ram_oplen <= 0;
+    card_addr <= 0;
+    card_in <= 0;
+    card_we <= 0;
+    out <= 0;
+    flush_addr <= 0;
+    flush_caddr <= 0;
   end else if (enable) begin
     unique case (state)
       MC_READY: begin
@@ -113,7 +156,7 @@ always_ff @(posedge clk) begin
         end else if (addr <= LIMIT_RAM) begin
           cache_access(addr);
         end else begin
-          cache_access(addr);
+          card_access(addr);
         end
       end
       MC_FLUSH: begin
@@ -126,10 +169,14 @@ always_ff @(posedge clk) begin
         cache_in <= in;
         cache_we <= 0;
 
-        if (flush_addr <= LIMIT_RAM) begin
-          state <= MC_RAM_FLUSH;
-        end else begin
-          state <= MC_SDC_FLUSH;
+        if (cache_dirty) begin /// TODO: Move ram flushing to the ram module as well
+          if (flush_addr <= LIMIT_RAM) begin state <= MC_RAM_FLUSH; end 
+          else begin state <= MC_READY; end
+        end else begin 
+          flush_caddr <= {addr[31:9], 9'h00000};
+          flush_addr <= {addr[31:9], 9'h00000};
+          if (flush_addr <= LIMIT_RAM) begin state <= MC_RAM_READ; end 
+          else begin state <= MC_READY; end
         end
       end
       MC_RAM_FLUSH: begin
@@ -184,11 +231,6 @@ always_ff @(posedge clk) begin
           cache_addr <= flush_caddr;
           cache_we <= 1;
           cache_in <= ram_out;
-        end
-      end
-      MC_SDC_FLUSH: begin /// TODO: Implement caching for sdcard
-        if ((&flush_caddr[7:0] == 0) & (flush_caddr != flush_addr)) begin
-          state <= MC_SDC_READ;
         end
       end
     endcase

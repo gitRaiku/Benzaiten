@@ -1,5 +1,4 @@
 `timescale 1ns / 1ps
-import defs::*;
 
 module instructionDecoder(
   input logic [31:0]instr,

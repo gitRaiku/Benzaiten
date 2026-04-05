@@ -30,14 +30,14 @@ module alu(
       ALU_AND: out = in1 & in2;
       ALU_OR : out = in1 | in2;
       ALU_XOR: out = in1 ^ in2;
-      ALU_EQN: out = in1 == in2;
-      ALU_LT : out = $signed(in1) < $signed(in2);
-      ALU_LTU: out = in1 < in2;
-      ALU_GT : out = $signed(in1) > $signed(in2);
-      ALU_GTU: out = in1 > in2;
+      ALU_EQN: out = {31'h0, in1 == in2};
+      ALU_LT : out = {31'h0, $signed(in1) < $signed(in2)};
+      ALU_LTU: out = {31'h0, in1 < in2};
+      ALU_GT : out = {31'h0, $signed(in1) > $signed(in2)};
+      ALU_GTU: out = {31'h0, in1 > in2};
       ALU_SLL: out = in1 << in2[4:0];
       ALU_SLR: out = in1 >> in2[4:0];
-      ALU_SAR: out = $signed(in1) >>> $signed(in2[4:0]);
+      ALU_SAR: out = $unsigned($signed(in1) >>> $signed(in2[4:0]));
       default: out = 32'hXXXX;
     endcase
   end
