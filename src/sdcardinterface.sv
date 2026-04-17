@@ -5,10 +5,11 @@ module sdcardinterface #(parameter logic [9:0]SD_BLOCKLEN=512) (
   input logic enable, input logic we,
 // verilator lint_off UNUSEDSIGNAL
   input logic [31:0]addr, 
-  input logic [7:0]in,
 // verilator lint_on UNUSEDSIGNAL
   output logic outvalid, output logic [7:0]out,
   output logic valid, 
+
+  output logic invalid, input logic [7:0]in,
 
   output spi_ss_n, output spi_sclk,
   output spi_mosi, input spi_miso
@@ -85,9 +86,14 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
                  SDC_READ_1 = 81, 
                  SDC_READ_2 = 82, 
                  SDC_READ_3 = 83, 
-                 SDC_READ_4 = 84 
+                 SDC_READ_4 = 84 ,
+                 SDC_WRITE_1 = 91, 
+                 SDC_WRITE_2 = 92, 
+                 SDC_WRITE_3 = 93,
+                 SDC_WRITE_4 = 94,
+                 SDC_WRITE_5 = 95
                  } sdc_mstate_t;
-  typedef enum { SDCE_UNSUPPORTED_VER, SDCE_SDV1_INIT_FAIL, SDCE_CMD_TIMEOUT, SDCE_READ_TIMEOUT, SDCE_READ_ERROR } sdc_errors_t;
+  typedef enum { SDCE_UNSUPPORTED_VER, SDCE_SDV1_INIT_FAIL, SDCE_CMD_TIMEOUT, SDCE_READ_TIMEOUT, SDCE_READ_ERROR, SDCE_WRITE_TIMEOUT } sdc_errors_t;
   (* mark_debug = "true" *) sdc_mstate_t state, nstate, nnstate;
 // verilator lint_off UNUSEDSIGNAL
   sdc_errors_t error; /// TODO: Error handling
@@ -95,7 +101,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
 // verilator lint_on UNUSEDSIGNAL
   (* mark_debug = "true" *) logic [7:0]state_timeout;
   (* mark_debug = "true" *) logic [9:0]state_timeout1;
-  (* mark_debug = "true" *) logic [9:0]read_blockpos;
+  (* mark_debug = "true" *) logic [9:0]blockpos;
 
 // verilator lint_off UNDRIVEN
 // verilator lint_off UNUSEDSIGNAL
@@ -264,7 +270,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
       sdver <= 0;
       state_timeout <= 0;
       state_timeout1 <= 0;
-      read_blockpos <= 0;
+      blockpos <= 0;
       rst_send_buffer;
     end else begin
       unique case (state)
@@ -391,7 +397,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
                 error_out(SDCE_READ_ERROR);
               end else begin
                 state <= SDC_READ_4;
-                read_blockpos <= 0;
+                blockpos <= 0;
               end
             end
           end else begin
@@ -403,9 +409,9 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
           end
         end
         SDC_READ_4: begin
-          if (read_blockpos < SD_BLOCKLEN + 2) begin
+          if (blockpos < SD_BLOCKLEN + 2) begin
             if (send_valid) begin
-              read_blockpos <= read_blockpos + 1;
+              blockpos <= blockpos + 1;
               send_enable <= 0;
               out <= send_recieve[0];
               outvalid <= 1;
@@ -418,6 +424,57 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
           end else begin
             valid <= 1;
             state <= SDC_READY;
+          end
+        end
+        SDC_WRITE_1: begin
+          send_cmd(24, {addr[31:8], 8'h0});
+          wait_cmd(SDC_WRITE_2);
+        end
+        SDC_WRITE_2: begin
+          send_buffer[0] <= 8'hfe;
+          send_buffer_len <= 1;
+          send_enable <= 1;
+          send_cs <= 1;
+          blockpos <= 0;
+          state <= SDC_WRITE_3;
+        end
+        SDC_WRITE_3: begin
+          if (send_enable) begin
+            if (send_valid) begin
+              send_enable <= 0;
+              blockpos <= blockpos + 1;
+              if (blockpos == SD_BLOCKLEN + 1) begin
+                state <= SDC_WRITE_4;
+                state_timeout1 <= 1023;
+              end
+            end
+          end else begin
+            send_buffer_len <= 1;
+            send_enable <= 1;
+            send_cs <= 1;
+            if (blockpos < SD_BLOCKLEN) begin
+              send_buffer[0] <= in;
+              invalid <= 1;
+            end else begin
+              send_buffer[0] <= (blockpos == SD_BLOCKLEN) ? 8'h69 : 8'h67;
+            end
+          end
+        end
+        SDC_WRITE_4: begin
+          if (send_valid) begin
+            send_enable <= 0;
+            state_timeout1 <= state_timeout1 - 1;
+            if (state_timeout1 == 0) begin
+              error_out(SDCE_WRITE_TIMEOUT);
+            end
+            if (send_recieve[0] != 0) begin
+              state <= SDC_READY;
+            end
+          end else begin
+            send_enable <= 1;
+            send_buffer_len <= 1;
+            send_cs <= 1;
+            send_buffer[0] <= 8'hff;
           end
         end
         SDC_READY: begin 
