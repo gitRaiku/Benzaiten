@@ -3,22 +3,23 @@
 .SET card_addr, 0x40000000
 .SET ram_addr, 0x0
 
-.SET unit, 500000
+.SET unit, 250000
 
+li a3, card_addr
 li a2, gpio_addr
 li a1, ~0
 
 loop:
 
-call linie
-call linie
-call punct
-call punct
-call linie
-call linie
+jal ra, linie
+jal ra, linie
+jal ra, punct
+jal ra, punct
+jal ra, linie
+jal ra, linie
 
-li x10, unit
-call sleep
+li x10, unit * 9
+jal ra, sleep
 
 j loop
 
@@ -27,11 +28,11 @@ mv t1, ra
 
 sw x0, 0(a2)
 li x10, unit * 3
-call sleep
+jal ra, sleep
 
 sw a1, 0(a2)
 li x10, unit
-call sleep
+jal ra, sleep
 
 mv ra, t1
 ret
@@ -41,11 +42,11 @@ mv t1, ra
 
 sw x0, 0(a2)
 li x10, unit
-call sleep
+jal ra, sleep
 
 sw a1, 0(a2)
 li x10, unit
-call sleep
+jal ra, sleep
 
 mv ra, t1
 ret
