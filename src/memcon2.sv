@@ -77,9 +77,16 @@ sdcard card(
     .spi_ss_n(spi_ss_n), .spi_sclk(spi_sclk),
     .spi_mosi(spi_mosi), .spi_miso(spi_miso));
 
-typedef enum { MC_READY, MC_FLUSH, MC_RAM_FLUSH, MC_RAM_FLUSH_WAIT, MC_RAM_READ, MC_RAM_READ_WAIT } mc_state_t;
+typedef enum { 
+  MC_READY = 10, 
+  MC_FLUSH = 20, 
+  MC_RAM_FLUSH = 30, 
+  MC_RAM_FLUSH_WAIT = 31, 
+  MC_RAM_READ = 40, 
+  MC_RAM_READ_WAIT = 41
+  } mc_state_t;
 
-mc_state_t state;
+(* mark_debug = "true" *) mc_state_t state;
 
 task automatic cache_access; input logic [31:0]in_addr;
   cache_enable <= 1;

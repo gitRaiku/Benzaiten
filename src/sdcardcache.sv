@@ -13,20 +13,26 @@ module sdcardcache(
   );
   /// TODO: Make this good as well
   /// Currently sequential flushes always flush the same buffer
-  (* ram_style = "block" *) logic [31:0]cache_buf[2 * 512 / 4 - 1:0];
-  logic [22:0]cache_addr[1:0];
-  logic cache_dirty[1:0];
-  logic cache_filled[1:0];
-  logic overwrite_cache;
 
-  logic addr_invalid;
-  logic ccache;
+  (* ram_style = "block" *) logic [31:0]cache_buf[2 * 512 / 4 - 1:0];
+
+  (* mark_debug = "true" *) logic [1:0][22:0]cache_addr;
+  (* mark_debug = "true" *) logic [1:0]cache_dirty;
+  (* mark_debug = "true" *) logic [1:0]cache_filled;
+  (* mark_debug = "true" *) logic overwrite_cache;
+
+  (* mark_debug = "true" *) logic addr_invalid;
+  (* mark_debug = "true" *) logic ccache;
+
   always_comb begin
     addr_invalid = 0;
     ccache = 0;
     if (cache_addr[0] == addr[31:9] && cache_filled[0]) ccache = 0;
     else if (cache_addr[1] == addr[31:9] && cache_filled[1]) ccache = 1;
-    else addr_invalid = 1;
+    else begin
+      addr_invalid = 1;
+      if (cache_filled[0]) ccache = 1; /// TODO: Make better
+    end
   end
 
   always @(posedge clk) begin
@@ -58,10 +64,13 @@ module sdcardcache(
           end
         end else begin
           if (overwrite) begin
-            cache_buf[{ccache, addr[8:2]}] <= in;
-            cache_dirty[overwrite_cache] <= 0;
-            cache_addr[overwrite_cache] <= addr[31:9];
-            cache_filled[overwrite_cache] <= 1;
+            cache_buf[{overwrite_cache, addr[8:2]}] <= in;
+            if (addr[8:0] == 508) begin
+              cache_addr[overwrite_cache] <= addr[31:9];
+              cache_dirty[overwrite_cache] <= 0;
+              cache_filled[overwrite_cache] <= 1;
+              overwrite_cache <= ~overwrite_cache;
+            end
             valid <= 1;
           end else begin
             invalid <= 1;

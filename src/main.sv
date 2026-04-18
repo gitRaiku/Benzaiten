@@ -13,7 +13,7 @@ module main(
   output logic spi_ss_n, output logic spi_sclk,
   output logic spi_mosi, input logic spi_miso,
 
-  output [31:0]gpio
+  (* mark_debug = "true" *) output [31:0]gpio
   );
 
   wire clk;
@@ -38,7 +38,7 @@ module main(
   */
 
   assign led_2_n = rst_n_in;
-  assign led_1_n = button_1_n;
+  assign led_1_n = gpio[0] | (button_1_n & 0);
 
   logic [6:0]instr_op;
   logic [9:0]instr_func;
@@ -57,14 +57,16 @@ module main(
   logic [31:0]alu_result;
 
   /// TODO: Support ecall, ebreak, fence
-  logic [31:0]instruction;
-  logic [31:0]pc;
+  (* mark_debug = "true" *) logic [31:0]instruction;
+  (* mark_debug = "true" *) logic [31:0]pc;
   logic [31:0]nextpc;
   logic [7:0]init_wait;
 
-  logic mem_we, mem_enable, mem_valid;
+  (* mark_debug = "true" *) logic [31:0]instrcounter;
+
+  (* mark_debug = "true" *)logic mem_we, mem_enable, mem_valid;
   logic [1:0]mem_oplen;
-  logic [31:0]mem_addr, mem_in, mem_out;
+  (* mark_debug = "true" *)logic [31:0]mem_addr, mem_in, mem_out;
   memcon2 memcon(
     .clk(clk), .rst(rst), .enable(mem_enable), .valid(mem_valid),
     .addr(mem_addr), .we(mem_we), .oplen(mem_oplen),
@@ -96,8 +98,15 @@ module main(
   alucon acon(.op(instr_op), .func(instr_func), .pc(pc), .itype(instr_type),
               .rf1(regfile_res1), .rf2(regfile_res2), .imm(instr_imm), .result(alu_result));
 
-  typedef enum bit[2:0] { CPU_NEVER_INITED, CPU_FETCH, CPU_DECODE, CPU_EX, CPU_MEM, CPU_WB } cpustage_t;
-  cpustage_t state;
+  typedef enum bit[6:0] { 
+    CPU_NEVER_INITED = 10, 
+    CPU_FETCH = 20, 
+    CPU_DECODE = 30, 
+    CPU_EX = 40, 
+    CPU_MEM = 50, 
+    CPU_WB = 60 
+  } cpustage_t;
+  (* mark_debug = "true" *) cpustage_t state;
   always_ff @(posedge clk) begin
     regfile_we <= 1'b0;
     mem_enable <= 0;
@@ -112,6 +121,7 @@ module main(
       mem_in <= 0;
       mem_we <= 0;
       mem_oplen <= 0;
+      instrcounter <= 0;
     end else begin
       /*
       * Read Instr
@@ -195,6 +205,7 @@ module main(
           end
           pc <= nextpc;
           state <= CPU_FETCH;
+          instrcounter <= instrcounter + 1;
         end
       endcase
     end

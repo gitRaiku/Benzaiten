@@ -3,6 +3,7 @@
 module sdcardinterface #(parameter logic [9:0]SD_BLOCKLEN=512) (
   input logic clk, rst,
   input logic enable, input logic we,
+  output logic error,
 // verilator lint_off UNUSEDSIGNAL
   input logic [31:0]addr, 
 // verilator lint_on UNUSEDSIGNAL
@@ -69,38 +70,51 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
 
 
 
-  typedef enum { SDC_1_PULSE_1 = 11, 
-                 SDC_1_PULSE_2 = 12,
-                 SDC_2_INIT_1 = 21, 
-                 SDC_2_INIT_2 = 22, 
-                 SDC_3_CHECKSDV2 = 30, 
-                 SDC_4_SDV1_1 = 41, 
-                 SDC_4_SDV1_2 = 42, 
-                 SDC_4_SDV1_3 = 43, 
-                 SDC_4_SDV1_4 = 44, 
-                 SDC_5_INIT_FINISH = 50, 
-                 SDC_CMD_WAIT = 101, 
-                 SDC_WAIT = 102, 
-                 SDC_READY = 103, 
-                 SDC_ERROR = 404,
-                 SDC_READ_1 = 81, 
-                 SDC_READ_2 = 82, 
-                 SDC_READ_3 = 83, 
-                 SDC_READ_4 = 84 ,
-                 SDC_WRITE_1 = 91, 
-                 SDC_WRITE_2 = 92, 
-                 SDC_WRITE_3 = 93,
-                 SDC_WRITE_4 = 94,
-                 SDC_WRITE_5 = 95
-                 } sdc_mstate_t;
-  typedef enum { SDCE_UNSUPPORTED_VER, SDCE_SDV1_INIT_FAIL, SDCE_CMD_TIMEOUT, SDCE_READ_TIMEOUT, SDCE_READ_ERROR, SDCE_WRITE_TIMEOUT } sdc_errors_t;
-  (* mark_debug = "true" *) sdc_mstate_t state, nstate, nnstate;
+  typedef enum { 
+    SDC_1_PULSE_1 = 11, 
+    SDC_1_PULSE_2 = 12,
+    SDC_2_INIT_1 = 21, 
+    SDC_2_INIT_2 = 22, 
+    SDC_3_CHECKSDV2 = 30, 
+    SDC_4_SDV1_1 = 41, 
+    SDC_4_SDV1_2 = 42, 
+    SDC_4_SDV1_3 = 43, 
+    SDC_4_SDV1_4 = 44, 
+    SDC_5_INIT_FINISH = 50, 
+    SDC_CMD_WAIT = 101, 
+    SDC_WAIT = 102, 
+    SDC_READY = 103, 
+    SDC_ERROR = 404,
+    SDC_READ_1 = 81, 
+    SDC_READ_2 = 82, 
+    SDC_READ_3 = 83, 
+    SDC_READ_4 = 84 ,
+    SDC_WRITE_1 = 91, 
+    SDC_WRITE_2 = 92, 
+    SDC_WRITE_3 = 93,
+    SDC_WRITE_4 = 94,
+    SDC_WRITE_5 = 95
+  } sdc_mstate_t;
+
+  typedef enum { 
+    SDCE_NONE = 0, 
+    SDCE_UNSUPPORTED_VER = 10, 
+    SDCE_SDV1_INIT_FAIL = 20, 
+    SDCE_CMD_TIMEOUT = 30, 
+    SDCE_READ_TIMEOUT = 40, 
+    SDCE_READ_2_ERROR = 52, 
+    SDCE_READ_3_ERROR = 53, 
+    SDCE_WRITE_TIMEOUT = 60 
+  } sdc_errors_t;
+
+  (* mark_debug = "true" *) sdc_mstate_t state;
+  sdc_mstate_t nstate, nnstate;
 // verilator lint_off UNUSEDSIGNAL
-  sdc_errors_t error; /// TODO: Error handling
+  (* mark_debug = "true" *) sdc_errors_t cerror; /// TODO: Error handling
   logic sdver; // 0: SDV1, 1: SDV2 TODO: SDV2
 // verilator lint_on UNUSEDSIGNAL
-  (* mark_debug = "true" *) logic [7:0]state_timeout;
-  (* mark_debug = "true" *) logic [9:0]state_timeout1;
+  logic [7:0]state_timeout;
+  logic [9:0]state_timeout1;
   (* mark_debug = "true" *) logic [9:0]blockpos;
 
 // verilator lint_off UNDRIVEN
@@ -111,8 +125,8 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
   (* mark_debug = "true" *) logic [7:0]last_rec_byte; // TODO: Remove
 // verilator lint_on UNUSEDSIGNAL
   assign last_rec_byte = send_recieve[0];
-  (* mark_debug = "true" *) logic [7:0]send_buffer_len;
-  (* mark_debug = "true" *) logic [7:0]send_curbufpos;
+  logic [7:0]send_buffer_len;
+  logic [7:0]send_curbufpos;
   (* mark_debug = "true" *) logic send_enable, send_valid, send_cs;
 
   task automatic  rst_recieve_buffer;
@@ -154,7 +168,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
   endtask
 
   task automatic error_out; input sdc_errors_t cur_error;
-    error <= cur_error;
+    cerror <= cur_error;
     state <= SDC_ERROR;
   endtask
   task automatic wait_cmd; input sdc_mstate_t next_state;
@@ -174,8 +188,8 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
   logic [31:0]clkc_slow;
   logic spi_clk_fast;
   logic spi_clk_slow;
-  (* mark_debug = "true" *) assign spi_clk_fast = clkc_fast > (CLK_FAST / 2);
-  (* mark_debug = "true" *) assign spi_clk_slow = clkc_slow > (CLK_SLOW / 2);
+  assign spi_clk_fast = clkc_fast > (CLK_FAST / 2);
+  assign spi_clk_slow = clkc_slow > (CLK_SLOW / 2);
   always @(posedge clk) begin
     if (rst) begin
       clkc_fast <= 0;
@@ -188,8 +202,8 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
     end
   end
 
-  (* mark_debug = "true" *) logic spi_clk_speed;
-  (* mark_debug = "true" *) wire spi_clk = spi_clk_speed ? spi_clk_fast : spi_clk_slow;
+  logic spi_clk_speed;
+  (* mark_debug = "true" *) wire spi_clk = spi_clk_speed ? spi_clk_fast : spi_clk_slow; /// TODO: Look into this
   // (* mark_debug = "true" *) wire spi_clk = spi_clk_fast;
   (* mark_debug = "true" *) logic [6:0]debug_clk;
   always @(posedge clk) begin
@@ -259,6 +273,8 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
 
   always_ff @(posedge clk) begin
     outvalid <= 0;
+    invalid <= 0;
+    valid <= 0;
     if (rst) begin
       state <= SDC_1_PULSE_1;
       send_cs <= 0;
@@ -272,6 +288,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
       state_timeout1 <= 0;
       blockpos <= 0;
       rst_send_buffer;
+      cerror <= SDCE_NONE;
     end else begin
       unique case (state)
         SDC_1_PULSE_1: begin
@@ -348,6 +365,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
         end
         SDC_5_INIT_FINISH: begin
           spi_clk_speed <= 1;
+          send_enable <= 0;
           state <= SDC_READY;
         end
         SDC_CMD_WAIT: begin
@@ -379,11 +397,13 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
           wait_cmd(SDC_READ_2);
         end
         SDC_READ_2: begin
-          if (send_recieve[0] != 0) begin
-            error_out(SDCE_READ_ERROR);
-          end
           state <= SDC_READ_3;
           state_timeout1 <= 1000;
+          /*
+          if (send_recieve[0] != 0) begin
+            error_out(SDCE_READ_2_ERROR);
+          end
+          */
         end
         SDC_READ_3: begin
           if (send_valid) begin
@@ -394,7 +414,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
             end
             if (send_recieve[0] != 8'hff) begin
               if (send_recieve[0] != 8'hfe) begin
-                error_out(SDCE_READ_ERROR);
+                error_out(SDCE_READ_3_ERROR);
               end else begin
                 state <= SDC_READ_4;
                 blockpos <= 0;
@@ -422,6 +442,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
               send_cs <= 1;
             end
           end else begin
+            blockpos <= 0;
             valid <= 1;
             state <= SDC_READY;
           end
@@ -468,6 +489,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
               error_out(SDCE_WRITE_TIMEOUT);
             end
             if (send_recieve[0] != 0) begin
+              valid <= 1;
               state <= SDC_READY;
             end
           end else begin
@@ -488,7 +510,9 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
             end
           end
         end
-        SDC_ERROR: begin end
+        SDC_ERROR: begin 
+          state <= SDC_1_PULSE_1;
+        end
       endcase
     end
   end
