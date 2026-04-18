@@ -65,6 +65,7 @@ module sdcard(
     cache_in <= in;
     cache_addr <= addr;
     cache_overwrite <= 0;
+    int_enable <= 0;
     state <= SDC_TRY_CACHE;
     if (we) begin
       cache_we <= 1;
