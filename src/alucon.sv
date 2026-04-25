@@ -84,6 +84,14 @@ module alucon(
           9'b000000_001: aluop = ALU_SLL;
           9'b000000_101: aluop = ALU_SLR;
           9'b010000_101: aluop = ALU_SAR;
+          9'b000001_000: aluop = ALU_MUL;
+          9'b000001_001: aluop = ALU_MULH;
+          9'b000001_011: aluop = ALU_MULHU;
+          9'b000001_010: aluop = ALU_MULHSU;
+          9'b000001_100: aluop = ALU_DIV;
+          9'b000001_101: aluop = ALU_DIVU;
+          9'b000001_110: aluop = ALU_REM;
+          9'b000001_111: aluop = ALU_REMU;
           default: aluop = ALU_INVALID;
         endcase
       7'b11000_11:

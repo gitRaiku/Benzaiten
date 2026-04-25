@@ -16,14 +16,15 @@ module sdcardcache(
 
   (* ram_style = "block" *) logic [31:0]cache_buf[2 * 512 / 4 - 1:0];
 
-  (* mark_debug = "true" *) logic [1:0][22:0]cache_addr;
-  (* mark_debug = "true" *) logic [1:0]cache_dirty;
-  (* mark_debug = "true" *) logic [1:0]cache_filled;
-  (* mark_debug = "true" *) logic overwrite_cache;
+  logic [1:0][22:0]cache_addr;
+  logic [1:0]cache_dirty;
+  logic [1:0]cache_filled;
+  logic overwrite_cache;
 
-  (* mark_debug = "true" *) logic addr_invalid;
-  (* mark_debug = "true" *) logic ccache;
+  logic addr_invalid;
+  logic ccache;
 
+  logic [7:0]cache_sel;
   always_comb begin
     addr_invalid = 0;
     ccache = 0;
@@ -32,6 +33,11 @@ module sdcardcache(
     else begin
       addr_invalid = 1;
       if (cache_filled[0]) ccache = 1; /// TODO: Make better
+    end
+
+    cache_sel = {ccache, addr[8:2]};
+    if (addr_invalid && overwrite) begin
+      cache_sel = {overwrite_cache, addr[8:2]};
     end
   end
 
@@ -55,16 +61,16 @@ module sdcardcache(
           valid <= 1;
           if (we) begin
             overwrite_cache <= ~ccache;
-            cache_buf[{ccache, addr[8:2]}] <= in;
+            cache_buf[cache_sel] <= in;
             if (!overwrite) begin
               cache_dirty[ccache] <= 1;
             end
           end else begin
-            out <= cache_buf[{ccache, addr[8:2]}];
+            out <= cache_buf[cache_sel];
           end
         end else begin
           if (overwrite) begin
-            cache_buf[{overwrite_cache, addr[8:2]}] <= in;
+            cache_buf[cache_sel] <= in;
             if (addr[8:0] == 508) begin
               cache_addr[overwrite_cache] <= addr[31:9];
               cache_dirty[overwrite_cache] <= 0;

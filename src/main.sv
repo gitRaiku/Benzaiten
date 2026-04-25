@@ -13,6 +13,8 @@ module main(
   output logic spi_ss_n, output logic spi_sclk,
   output logic spi_mosi, input logic spi_miso,
 
+  (* mark_debug = "true" *) output logic uart_out, (* mark_debug = "true" *) input logic uart_in,
+
   (* mark_debug = "true" *) output [31:0]gpio
   );
 
@@ -39,6 +41,15 @@ module main(
 
   assign led_2_n = rst_n_in;
   assign led_1_n = gpio[0] | (button_1_n & 0);
+
+  (* mark_debug = "true" *) logic [6:0]debug_clk;
+  always @(posedge clk) begin
+    if (rst) begin
+      debug_clk <= 0;
+    end else begin
+      debug_clk <= debug_clk + 1;
+    end
+  end
 
   logic [6:0]instr_op;
   logic [9:0]instr_func;
@@ -67,7 +78,7 @@ module main(
   (* mark_debug = "true" *)logic mem_we, mem_enable, mem_valid;
   logic [1:0]mem_oplen;
   (* mark_debug = "true" *)logic [31:0]mem_addr, mem_in, mem_out;
-  memcon2 memcon(
+  memcon memcon(
     .clk(clk), .rst(rst), .enable(mem_enable), .valid(mem_valid),
     .addr(mem_addr), .we(mem_we), .oplen(mem_oplen),
     .in(mem_in), .out(mem_out),
@@ -80,6 +91,8 @@ module main(
 
     .spi_ss_n(spi_ss_n), .spi_sclk(spi_sclk),
     .spi_mosi(spi_mosi), .spi_miso(spi_miso),
+
+    .uart_out(uart_out), .uart_in(uart_in),
 
     .gpio(gpio)
     );

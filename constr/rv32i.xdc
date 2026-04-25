@@ -23,6 +23,9 @@ set_property PACKAGE_PIN V14 [get_ports s_ras_n]
 set_property PACKAGE_PIN U15 [get_ports s_we_n]
 set_property PACKAGE_PIN V13 [get_ports s_cs_n]
 
+set_property PACKAGE_PIN F18 [get_ports uart_in]
+set_property PACKAGE_PIN G17 [get_ports uart_out]
+
 set_property PACKAGE_PIN U12 [get_ports {s_bs[1]}]
 set_property PACKAGE_PIN V12 [get_ports {s_bs[0]}]
 
@@ -117,6 +120,8 @@ set_property IOSTANDARD LVCMOS33 [get_ports spi_ss_n]
 set_property IOSTANDARD LVCMOS33 [get_ports spi_sclk]
 set_property IOSTANDARD LVCMOS33 [get_ports spi_mosi]
 set_property IOSTANDARD LVCMOS33 [get_ports spi_miso]
+set_property IOSTANDARD LVCMOS33 [get_ports uart_in]
+set_property IOSTANDARD LVCMOS33 [get_ports uart_out]
 
 create_clock -period 20.000 [get_ports clk_50_in]
 set_input_jitter [get_clocks -of_objects [get_ports clk_50_in]] 0.200

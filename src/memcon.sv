@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module memcon2(
+module memcon(
   input logic clk, rst,
   input logic [31:0]addr, input logic we,
   input logic [1:0]oplen,
@@ -16,12 +16,13 @@ module memcon2(
   output logic spi_ss_n, output logic spi_sclk,
   output logic spi_mosi, input logic spi_miso,
 
+  output logic uart_out, input logic uart_in,
+
   output logic [31:0] gpio
   );
 
 /// /////////////////////////////////////////////////////////// ///
 ///                                                             ///
-/// Memory layout TODO: Find actual memory limits               ///
 /// 0x00000000 - 0x0FFFFFFF Internal memory (first 4096 bytes)  ///
 /// 0x10000000 - 0x3FFFFFFF Ram (1E00000 bytes)                 ///
 /// 0x40000000 - 0xFFFFFFFF sdcard                              ///
@@ -38,11 +39,12 @@ localparam logic [31:0]LIMIT_SDC  = 32'hFFFFFFFF;
 
 /// TODO: Learn secrets of hyperborea and write this code better
 /// TODO: Support non-aligned sub-32bit ops
+/// TODO: Make memcache more similar to sdcache
 logic cache_we, cache_enable, cache_valid, cache_overwrite, cache_dirty;
 logic [31:0]cache_addr, cache_in, cache_out;
 logic cache_missed;
 assign cache_missed = !cache_valid & cache_dirty;
-memcache cache(
+ramcache cache(
   .clk(clk), .rst(rst), .addr(cache_addr), .in(cache_in),
   .dirty(cache_dirty), .we(cache_we), .enable(cache_enable), 
   .out(cache_out),
@@ -55,7 +57,9 @@ logic [31:0]iram_addr, iram_in, iram_out;
 internalRam #(.GPIO_ADDR(LIMIT_IRAM)) iram(
   .clk(clk), .rst(rst), .enable(iram_enable), .valid(iram_valid),
   .addr(iram_addr), .oplen(iram_oplen), .we(iram_we),
-  .in(iram_in), .out(iram_out), .gpio(gpio));
+  .in(iram_in), .out(iram_out), .gpio(gpio),
+  .uart_in(uart_in), .uart_out(uart_out)
+  );
 
 logic ram_enable, ram_valid, ram_we;
 logic [1:0]ram_oplen;
@@ -97,73 +101,68 @@ task automatic cache_access; input logic [31:0]in_addr;
 
   if (cache_valid) begin
     cache_enable <= 0;
-    out <= cache_out;
-    valid <= 1;
   end
   if (cache_missed) begin
     state <= MC_FLUSH;
   end
 endtask
 
-task automatic card_access; input logic [31:0]in_addr;
-  card_enable <= 1;
-  card_addr <= in_addr - START_SDC;
-  card_in <= in;
-  card_we <= we;
-
-  if (card_valid) begin
-    card_enable <= 0;
-    out <= card_out;
-    valid <= 1;
-  end
-endtask
-
 logic [31:0]flush_addr;
 logic [31:0]flush_caddr;
 
+always_comb begin
+  valid = 0;
+  iram_enable = 0;
+  iram_addr = 0;
+  iram_oplen = 0;
+  iram_in = 0;
+  iram_we = 0;
+  card_enable = 0;
+  card_addr = 0;
+  card_in = 0;
+  card_we = 0;
+  if (addr <= LIMIT_IRAM) begin
+    valid = iram_valid;
+    out = iram_out;
+    iram_enable = enable;
+    iram_addr = addr;
+    iram_oplen = oplen;
+    iram_in = in;
+    iram_we = we;
+  end else if (addr <= LIMIT_RAM) begin
+    valid = cache_valid;
+    out = cache_out;
+  end else begin
+    valid = card_valid;
+    out = card_out;
+    card_enable = enable;
+    card_addr = addr - START_SDC;
+    card_in = in;
+    card_we = we;
+  end
+end
+
 always_ff @(posedge clk) begin
-  iram_enable <= 0;
   cache_enable <= 0;
   ram_enable <= 0;
-  card_enable <= 0;
-  valid <= 0;
 
   if (rst) begin
     state <= MC_READY;
     cache_addr <= 0;
     cache_in <= 0;
-    iram_addr <= 0;
-    iram_in <= 0;
-    iram_we <= 0;
-    iram_oplen <= 0;
     ram_addr <= 0;
     ram_in <= 0;
     ram_we <= 0;
     ram_oplen <= 0;
-    card_addr <= 0;
-    card_in <= 0;
-    card_we <= 0;
-    out <= 0;
     flush_addr <= 0;
     flush_caddr <= 0;
   end else if (enable) begin
     unique case (state)
       MC_READY: begin
         if (addr <= LIMIT_IRAM) begin
-          iram_enable <= 1;
-          iram_addr <= addr;
-          iram_oplen <= oplen;
-          iram_in <= in;
-          iram_we <= we;
-          if (iram_valid) begin 
-            iram_enable <= 0; 
-            out <= iram_out;
-            valid <= 1; 
-          end
         end else if (addr <= LIMIT_RAM) begin
           cache_access(addr);
         end else begin
-          card_access(addr);
         end
       end
       MC_FLUSH: begin
@@ -242,7 +241,6 @@ always_ff @(posedge clk) begin
       end
     endcase
   end
-
 end
 
 endmodule

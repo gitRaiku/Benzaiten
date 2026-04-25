@@ -2,19 +2,19 @@
 
 module spi(
   input clk, input rst,
-  /* (* mark_debug = "true" *) */ input enable, /* (* mark_debug = "true" *) */ output valid,
+  input enable, output valid,
 
   input cclk, input cs,
-  /* (* mark_debug = "true" *) */ input logic [7:0]obuf, /* (* mark_debug = "true" *) */ output logic [7:0]ibuf,
+  input logic [7:0]obuf, output logic [7:0]ibuf,
 
-  /* (* mark_debug = "true" *) */ output logic ss_n, /* (* mark_debug = "true" *) */ output logic sclk,
-  /* (* mark_debug = "true" *) */ output logic mosi, /* (* mark_debug = "true" *) */ input miso
+  output logic ss_n, output logic sclk,
+  output logic mosi, input miso
   );
 
   logic internal_valid;
   assign valid = enable & internal_valid;
 
-  /* (* mark_debug = "true" *) */ logic [5:0]cpos;
+  logic [5:0]cpos;
   logic oldcclk;
   always_ff @(posedge clk) begin
     internal_valid <= 0;

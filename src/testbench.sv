@@ -6,7 +6,8 @@ module testbench();
   main pula(
   .clk_50_in(clk),
   .rst_n_in(1'b1),
-  .spi_miso(1'b0)
+  .spi_miso(1'b0),
+  .uart_in(1'b1)
   );
 
   initial begin

@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module memcache #(parameter GATLEN=8) (
+module ramcache #(parameter GATLEN=8) (
   input logic clk, rst,
 
   input logic [31:0]addr, input logic [31:0] in,

@@ -3,10 +3,10 @@
 module sdcard(
   input logic clk, rst,
 
-  (* mark_debug = "true" *) input logic enable, (* mark_debug = "true" *) input logic we,
-  (* mark_debug = "true" *) input [31:0]addr, (* mark_debug = "true" *) input [31:0]in,
-  (* mark_debug = "true" *) output logic [31:0]out, 
-  (* mark_debug = "true" *) output logic valid,
+  input logic enable, input logic we,
+  input [31:0]addr, input [31:0]in,
+  output logic [31:0]out, 
+  output logic valid,
 
   output spi_ss_n, output spi_sclk,
   output spi_mosi, input spi_miso
@@ -14,8 +14,8 @@ module sdcard(
 
   localparam logic [9:0]sd_blocklen = 512;
 
-  (* mark_debug = "true" *) logic [31:0]cache_addr, cache_in, cache_out, cache_dirty_addr;
-  (* mark_debug = "true" *) logic cache_enable, cache_we, cache_overwrite, cache_valid, cache_dirty, cache_invalid;
+  logic [31:0]cache_addr, cache_in, cache_out, cache_dirty_addr;
+  logic cache_enable, cache_we, cache_overwrite, cache_valid, cache_dirty, cache_invalid;
   sdcardcache cache(
     .clk(clk), .rst(rst),
     .addr(cache_addr), .in(cache_in), .invalid(cache_invalid),
@@ -24,9 +24,9 @@ module sdcard(
     .dirty_addr(cache_dirty_addr)
     );
 
-  (* mark_debug = "true" *) logic [31:0]int_addr;
-  (* mark_debug = "true" *) logic [7:0]int_in, int_out;
-  (* mark_debug = "true" *) logic int_enable, int_we, int_valid, int_invalid, int_outvalid, int_error;
+  logic [31:0]int_addr;
+  logic [7:0]int_in, int_out;
+  logic int_enable, int_we, int_valid, int_invalid, int_outvalid, int_error;
   sdcardinterface #(.SD_BLOCKLEN(sd_blocklen)) inter(
     .clk(clk), .rst(rst),
     .addr(int_addr), .in(int_in), .error(int_error),
@@ -44,9 +44,9 @@ module sdcard(
     SDC_CACHE_FILL = 50 
   } op_state_t;
 
-  (* mark_debug = "true" *) op_state_t state; 
+  op_state_t state; 
   logic [23:0]block_cval;
-  (* mark_debug = "true" *) logic [9:0]block_pos;
+  logic [9:0]block_pos;
   logic [1:0]block_byte_pos;
 
   task automatic start_cache_fill;

@@ -23,6 +23,21 @@ module alu(
   output logic [31:0]out
   );
 
+
+  // MUL    = SS
+  // MULH   = SS
+  // MULHU  = UU
+  // MULHSU = SU
+
+  /*
+  wire [31:0]ext1;
+  wire [31:0]ext2;
+  assign ext1 = (op == ALU_MULHU) ? 32'h0 : in1[31];
+  assign ext2 = (op == ALU_MULHU || op == ALU_MULHSU) ? 32'h0 : in2[31];
+  logic signed [63:0]mul;
+  assign mul = $signed({ext1, in1}) * $signed({ext2, in2});
+  */
+
   always_comb begin
     case (op)
       ALU_ADD: out = in1 + in2;
@@ -38,6 +53,15 @@ module alu(
       ALU_SLL: out = in1 << in2[4:0];
       ALU_SLR: out = in1 >> in2[4:0];
       ALU_SAR: out = $unsigned($signed(in1) >>> $signed(in2[4:0]));
+      /*
+      ALU_MUL: out = mul[31:0];
+      ALU_MULH: out = mul[63:32];
+      ALU_MULHU: out = mul[63:32];
+      ALU_MULHSU: out = mul[63:32];
+      ALU_DIV: out = $unsigned($signed(in1) / $signed(in2));
+      ALU_DIVU: out = in1 / in2;
+      ALU_REM: out = $unsigned($signed(in1) % $signed(in2));
+      ALU_REMU: out = in1 % in2;*/
       default: out = 32'hXXXX;
     endcase
   end

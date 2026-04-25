@@ -114,24 +114,24 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
   (* mark_debug = "true" *) sdc_mstate_t state;
   sdc_mstate_t nstate, nnstate;
 // verilator lint_off UNUSEDSIGNAL
-  (* mark_debug = "true" *) sdc_errors_t cerror; /// TODO: Error handling
+  sdc_errors_t cerror; /// TODO: Error handling
   logic sdver; // 0: SDV1, 1: SDV2 TODO: SDV2
 // verilator lint_on UNUSEDSIGNAL
   logic [7:0]state_timeout;
   logic [31:0]state_timeout1;
-  (* mark_debug = "true" *) logic [9:0]blockpos;
+  logic [9:0]blockpos;
 
 // verilator lint_off UNDRIVEN
 // verilator lint_off UNUSEDSIGNAL
   logic [15:0][7:0]send_buffer;
   logic [15:0][7:0]send_recieve;
 // verilator lint_on UNDRIVEN
-  (* mark_debug = "true" *) logic [7:0]last_rec_byte; // TODO: Remove
+  logic [7:0]last_rec_byte; // TODO: Remove
 // verilator lint_on UNUSEDSIGNAL
   assign last_rec_byte = send_recieve[0];
-  (* mark_debug = "true" *) logic [7:0]send_buffer_len;
-  (* mark_debug = "true" *) logic [7:0]send_curbufpos;
-  (* mark_debug = "true" *) logic send_enable, send_valid, send_cs;
+  logic [7:0]send_buffer_len;
+  logic [7:0]send_curbufpos;
+  logic send_enable, send_valid, send_cs;
 
   task automatic  rst_recieve_buffer;
     send_recieve[0] <= 8'hff;
@@ -207,16 +207,7 @@ babcbec0c2c4c6c8caccced0d2d4d6d8dadcdee0e2e4e6e8eaeceef0f2f4f6f8fafcfe
   end
 
   logic spi_clk_speed;
-  (* mark_debug = "true" *) wire spi_clk = spi_clk_speed ? spi_clk_fast : spi_clk_slow; /// TODO: Look into this
-  // (* mark_debug = "true" *) wire spi_clk = spi_clk_fast;
-  (* mark_debug = "true" *) logic [6:0]debug_clk;
-  always @(posedge clk) begin
-    if (rst) begin
-      debug_clk <= 0;
-    end else begin
-      debug_clk <= debug_clk + 1;
-    end
-  end
+  wire spi_clk = spi_clk_speed ? spi_clk_fast : spi_clk_slow; /// TODO: Look into this
   spi sdspi(
       .clk(clk), .rst(rst),
       .enable(spi_enable), .valid(spi_valid),
