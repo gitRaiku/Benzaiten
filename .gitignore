@@ -3,3 +3,4 @@ vivado*
 *.bin
 *.o
 fpga
+*.iso
